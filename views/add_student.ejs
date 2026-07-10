@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Add Student</title>
+    <style>
+      body {
+        font-family: Arial;
+        background: #f4f4f4;
+        padding: 20px;
+      }
+      nav {
+        background: #333;
+        color: white;
+        padding: 1rem;
+      }
+      .box {
+        background: white;
+        padding: 30px;
+        width: 500px;
+        margin: 20px auto;
+      }
+      input,
+      button {
+        padding: 10px;
+        margin: 8px 0;
+        width: 100%;
+      }
+      button {
+        background: green;
+        color: white;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <span>Hi, <%= user.name %></span>
+      <a href="/dashboard" style="color: white">Dashboard</a>
+      <a href="/students" style="color: white">All Students</a>
+      <a href="/logout" style="color: white">Logout</a>
+    </nav>
+    <div class="box">
+      <h2>Add New Student</h2>
+      <form action="/students/add" method="POST">
+        <input name="name" placeholder="Full Name" required />
+        <input name="admission_no" placeholder="Admission No" required />
+        <input name="class" placeholder="Class e.g 7A" />
+        <input name="parent_phone" placeholder="Parent Phone" />
+        <button type="submit">Save Student</button>
+      </form>
+    </div>
+  </body>
+</html>

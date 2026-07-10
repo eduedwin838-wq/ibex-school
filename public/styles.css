@@ -1,0 +1,174 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f4f4f4;
+  color: #333;
+}
+
+header {
+  background: #2c3e50;
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header nav a {
+  color: white;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
+header nav span {
+  margin-left: 15px;
+  font-weight: bold;
+}
+
+.container {
+  padding: 20px;
+  max-width: 1100px;
+  margin: auto;
+  background: white;
+  margin-top: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+h1,
+h2 {
+  color: #2c3e50;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.card {
+  background: #3498db;
+  padding: 20px;
+  text-align: center;
+  border-radius: 6px;
+}
+
+.card a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+table,
+th,
+td {
+  border: 1px solid #ddd;
+}
+
+th,
+td {
+  padding: 10px;
+  text-align: left;
+}
+
+th {
+  background: #2c3e50;
+  color: white;
+}
+
+.btn {
+  display: inline-block;
+  background: #27ae60;
+  color: white;
+  padding: 8px 12px;
+  text-decoration: none;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 8px;
+  margin: 8px 0 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  background: #3498db;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.user-info {
+  color: #fff;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.form {
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  max-width: 400px;
+  margin-top: 20px;
+}
+
+.form label {
+  display: block;
+  margin: 12px 0 6px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.form input,
+.form select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.form button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+  background: #1a365d;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.form button:hover {
+  background: #2c5282;
+}
+
+.btn-primary {
+  display: inline-block;
+  background: #1a365d;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}

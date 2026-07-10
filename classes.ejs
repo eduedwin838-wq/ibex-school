@@ -1,0 +1,23 @@
+<%- include('_header.ejs') %>
+  <h2>Classes</h2>
+  <a href="/classes/add" class="btn">Add Class</a>
+  <table>
+    <tr>
+      <th>ID</th><th>Class Name</th><th>Stream</th><th>Class Teacher</th><th>Actions</th>
+    </tr>
+    <% classes.forEach(cls => { %>
+    <tr>
+      <td><%= cls.id %></td>
+      <td><%= cls.name %></td>
+      <td><%= cls.stream %></td>
+      <td><%= cls.teacherName %></td>
+      <td>
+        <a href="/classes/edit/<%= cls.id %>">Edit</a> | 
+        <a href="/classes/delete/<%= cls.id %>">Delete</a>
+      </td>
+    </tr>
+    <% }) %>
+  </table>
+</div>
+</body>
+</html>

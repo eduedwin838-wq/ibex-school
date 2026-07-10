@@ -1,0 +1,18 @@
+<%- include('_header.ejs') %>
+  <h2>Student Reports</h2>
+  <table>
+    <tr>
+      <th>Student</th><th>Subject</th><th>Term</th><th>Score</th>
+    </tr>
+    <% grades.forEach(grade => { %>
+    <tr>
+      <td><%= grade.studentName %></td>
+      <td><%= grade.subject %></td>
+      <td><%= grade.term %></td>
+      <td><%= grade.score %></td>
+    </tr>
+    <% }) %>
+  </table>
+</div>
+</body>
+</html>

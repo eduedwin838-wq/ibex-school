@@ -1,0 +1,23 @@
+<%- include('_header.ejs') %>
+  <h2>Teachers List</h2>
+  <a href="/teachers/add" class="btn">Add Teacher</a>
+  <table>
+    <tr>
+      <th>ID</th><th>Name</th><th>Subject</th><th>Qualification</th><th>Actions</th>
+    </tr>
+    <% teachers.forEach(teacher => { %>
+    <tr>
+      <td><%= teacher.id %></td>
+      <td><%= teacher.name %></td>
+      <td><%= teacher.subject %></td>
+      <td><%= teacher.qualification %></td>
+      <td>
+        <a href="/teachers/edit/<%= teacher.id %>">Edit</a> | 
+        <a href="/teachers/delete/<%= teacher.id %>">Delete</a>
+      </td>
+    </tr>
+    <% }) %>
+  </table>
+</div>
+</body>
+</html>

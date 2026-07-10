@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Students - Ibex System</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background: #4CAF50; color: white; }
+    a.btn { background: #4CAF50; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h2>Welcome <%= user.name %></h2>
+  <a href="/students/add" class="btn">+ Add Student</a>
+  <a href="/logout" class="btn" style="background:red">Logout</a>
+  
+  <h3>All Students</h3>
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Admission No</th>
+      <th>Class</th>
+      <th>Parent Phone</th>
+      <th>Actions</th>
+    </tr>
+    <% if(students.length === 0){ %>
+      <tr><td colspan="6">No students found. <a href="/students/add">Add one</a></td></tr>
+    <% } %>
+    <% students.forEach(student => { %>
+      <tr>
+        <td><%= student.id %></td>
+        <td><%= student.name %></td>
+        <td><%= student.admission_no %></td>
+        <td><%= student.class %></td>
+        <td><%= student.parent_phone %></td>
+        <td>
+          <a href="/students/edit/<%= student.id %>">Edit</a> | 
+          <a href="/students/delete/<%= student.id %>" onclick="return confirm('Delete?')">Delete</a>
+        </td>
+      </tr>
+    <% }) %>
+  </table>
+</body>
+</html>

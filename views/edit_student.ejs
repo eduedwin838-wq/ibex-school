@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Edit Student</title>
+  </head>
+  <body style="font-family: Arial; padding: 20px">
+    <h2>Edit Student: <%= student.name %></h2>
+    <form method="POST" action="/students/edit/<%= student.id %>">
+      <label
+        >Name:
+        <input
+          type="text"
+          name="name"
+          value="<%= student.name %>"
+          required /></label
+      ><br /><br />
+      <label
+        >Admission No:
+        <input
+          type="text"
+          name="admission_no"
+          value="<%= student.admission_no %>"
+          required /></label
+      ><br /><br />
+      <label
+        >Class:
+        <input type="text" name="class" value="<%= student.class %>" /></label
+      ><br /><br />
+      <label
+        >Parent Phone:
+        <input
+          type="text"
+          name="parent_phone"
+          value="<%= student.parent_phone %>" /></label
+      ><br /><br />
+      <button type="submit">Update</button>
+    </form>
+    <br />
+    <a href="/students">Back to Students</a>
+  </body>
+</html>

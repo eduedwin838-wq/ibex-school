@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Register</title>
+    <style>
+      body {
+        font-family: Arial;
+        background: #f4f4f4;
+        padding: 20px;
+      }
+      .box {
+        background: white;
+        padding: 20px;
+        width: 350px;
+        margin: auto;
+        border-radius: 8px;
+      }
+      input,
+      select,
+      button {
+        padding: 8px;
+        margin: 5px 0;
+        width: 100%;
+      }
+      button {
+        background: #333;
+        color: white;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h2>Register</h2>
+      <form action="/register" method="POST">
+        <input name="name" placeholder="Full Name" required />
+        <input name="email" type="email" placeholder="Email" required />
+        <select name="role" required>
+          <option value="">Select Role</option>
+          <option value="admin">Admin</option>
+          <option value="teacher">Teacher</option>
+        </select>
+        <input
+          name="password"
+          type="password"
+          placeholder="Password"
+          required
+        />
+        <button type="submit">Register</button>
+      </form>
+    </div>
+  </body>
+</html>

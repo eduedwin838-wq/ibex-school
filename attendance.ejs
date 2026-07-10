@@ -1,0 +1,24 @@
+<%- include('_header.ejs') %>
+  <h2>Attendance</h2>
+  <form action="/attendance" method="POST">
+    <label>Select Date:</label>
+    <input type="date" name="date" required>
+    <table>
+      <tr><th>Student Name</th><th>Status</th></tr>
+      <% students.forEach(student => { %>
+      <tr>
+        <td><%= student.name %></td>
+        <td>
+          <select name="status[<%= student.id %>]">
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+          </select>
+        </td>
+      </tr>
+      <% }) %>
+    </table>
+    <button type="submit">Save Attendance</button>
+  </form>
+</div>
+</body>
+</html>
