@@ -82,16 +82,35 @@
     <% } %>
 
     <form method="POST" action="/register">
-      <input name="username" placeholder="Username" required>
+      <input name="name" placeholder="Full Name" required>
       <input name="email" type="email" placeholder="Email Address" required>
       <input name="password" type="password" placeholder="Password" required>
+      <input name="confirmPassword" type="password" placeholder="Confirm Password">
       
       <select name="role" required>
         <option value="" disabled selected>Select Role</option>
         <option value="admin">Admin</option>
         <option value="teacher">Teacher</option>
         <option value="student">Student</option>
+        <option value="parent">Parent</option>
       </select>
+
+      <div id="studentFields" hidden>
+        <input name="admissionNo" placeholder="Admission No">
+        <input name="class" placeholder="Class">
+      </div>
+      <div id="teacherFields" hidden>
+        <input name="subject" placeholder="Subject">
+        <input name="qualification" placeholder="Qualification">
+        <input name="tscNo" placeholder="TSC No">
+      </div>
+      <div id="parentFields" hidden>
+        <input name="childAdmissionNo" placeholder="Child Admission No">
+        <input name="phone" placeholder="Phone">
+      </div>
+      <div id="adminFields" hidden>
+        <input name="adminSecret" placeholder="Admin Secret Code" type="password">
+      </div>
 
       <button type="submit">Register</button>
     </form>
@@ -100,5 +119,19 @@
       Already have an account? <a href="/login">Login here</a>
     </div>
   </div>
+  <script>
+    const roleSelect = document.querySelector('select[name="role"]');
+    const sections = {
+      student: document.getElementById("studentFields"),
+      teacher: document.getElementById("teacherFields"),
+      parent: document.getElementById("parentFields"),
+      admin: document.getElementById("adminFields"),
+    };
+    roleSelect.addEventListener("change", () => {
+      Object.entries(sections).forEach(([role, section]) => {
+        section.hidden = role !== roleSelect.value;
+      });
+    });
+  </script>
 </body>
 </html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fees | Ibex System</title>
+  <style>
+    :root { --ink:#172033; --navy:#172554; --blue:#2563eb; --line:#e5e7eb; --soft:#f5f7fb; --green:#047857; --green-bg:#d1fae5; --red:#b91c1c; --red-bg:#fee2e2; }
+    * { box-sizing:border-box; } body { margin:0; font-family:Arial,sans-serif; color:var(--ink); background:var(--soft); }
+    nav { display:flex; gap:18px; flex-wrap:wrap; align-items:center; padding:17px 5%; background:var(--navy); } nav a, nav span { color:white; text-decoration:none; } nav a:first-child { font-weight:700; margin-right:auto; }
+    main { width:92%; max-width:1180px; margin:32px auto; } .panel { background:white; border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:22px; box-shadow:0 8px 24px #1725540d; }
+    h1,h2 { margin-top:0; } h1 { font-size:2rem; } .forms { display:grid; grid-template-columns:2fr 1fr; gap:18px; } form { display:flex; flex-wrap:wrap; gap:8px; align-items:end; } label { display:grid; gap:5px; font-size:.85rem; color:#4b5563; } input,select,button { padding:10px 11px; border:1px solid #cbd5e1; border-radius:6px; font:inherit; } button,.button { border:0; background:var(--blue); color:white; cursor:pointer; text-decoration:none; padding:11px 15px; border-radius:6px; } .secondary { background:#334155; }
+    .table-wrap { overflow-x:auto; } table { width:100%; min-width:720px; border-collapse:collapse; } th,td { padding:13px 11px; text-align:left; border-bottom:1px solid var(--line); } th { color:#64748b; font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; } .badge { display:inline-block; padding:5px 9px; border-radius:999px; font-size:.75rem; font-weight:700; } .cleared { color:var(--green); background:var(--green-bg); } .pending { color:var(--red); background:var(--red-bg); }
+    @media (max-width:800px) { .forms { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <nav><a href="/dashboard">Ibex System</a><a href="/dashboard">Dashboard</a><a href="/fees">Fees</a><a href="/reports">Reports</a><span><%= user.name %> - <%= user.role %></span><a href="/logout">Logout</a></nav>
+  <main>
+    <h1>Fees &amp; Payments</h1>
+    <% if (user.role === 'parent' || user.role === 'student') { %>
+      <section class="panel"><h2>Payment options</h2><p>Pay securely via M-Pesa Till <strong>123456</strong>, then ask the school administrator to record your payment.</p><a class="button" href="tel:*150*00%23">Pay via Mpesa Till 123456</a></section>
+    <% } %>
+    <% if (canManage) { %>
+      <section class="panel forms">
+        <div><h2>Record payment</h2><form method="POST" action="/fees/add"><label>Student<select name="student_id" required><option value="">Select student</option><% students.forEach(student => { %><option value="<%= student.id %>"><%= student.name %> (<%= student.admissionNo %>)</option><% }) %></select></label><label>Term<input name="term" placeholder="Term1-2026" required></label><label>Amount paid<input name="paid_amount" type="number" min="0.01" step="0.01" required></label><label>Method<select name="payment_method" required><option value="cash">Cash</option><option value="mpesa">M-Pesa</option><option value="bank">Bank</option></select></label><label>M-Pesa code<input name="mpesa_code" maxlength="20" placeholder="Optional"></label><button type="submit">Add payment</button></form></div>
+        <div><h2>Create term</h2><form method="POST" action="/fees/create-term"><label>Term<input name="term" placeholder="Term1-2026" required></label><label>Total amount<input name="total_amount" type="number" min="0" step="0.01" value="15000"></label><button class="secondary" type="submit">Create for all students</button></form></div>
+      </section>
+    <% } %>
+    <section class="panel"><h2><%= canManage ? 'All fee records' : 'My fee history' %></h2><div class="table-wrap"><table><tr><th>Student</th><th>Term</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr><% if (fees.length) { fees.forEach(fee => { const balance = Number(fee.balance || 0); %><tr><td><%= fee.student_name %></td><td><%= fee.term %></td><td><%= Number(fee.total_amount).toFixed(2) %></td><td><%= Number(fee.paid_amount).toFixed(2) %></td><td><strong><%= balance.toFixed(2) %></strong></td><td><span class="badge <%= balance === 0 ? 'cleared' : 'pending' %>"><%= balance === 0 ? 'CLEARED' : 'PENDING' %></span></td></tr><% }) } else { %><tr><td colspan="6">No fee records found.</td></tr><% } %></table></div></section>
+  </main>
+</body>
+</html>

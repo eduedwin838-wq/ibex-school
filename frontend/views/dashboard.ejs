@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Ibex System</title>
+  <% if (user.role === 'admin') { %><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><% } %>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f7fc; color: #1f2937; }
+    nav { background: #1e3a8a; padding: 16px 5%; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+    nav a, nav span { color: white; text-decoration: none; }
+    nav a:first-child { font-weight: bold; margin-right: auto; }
+    main { width: 90%; max-width: 1100px; margin: 32px auto; }
+    .welcome, .card { background: white; padding: 24px; border-radius: 8px; box-shadow: 0 3px 12px rgba(0,0,0,.08); margin-bottom: 20px; }
+    .badge { display: inline-block; background: #dbeafe; color: #1e3a8a; padding: 5px 10px; border-radius: 12px; text-transform: capitalize; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+    .card h2 { margin-top: 0; color: #1e3a8a; }
+    .count { font-size: 2rem; font-weight: bold; }
+    .money { color: #047857; font-size: 1.55rem; font-weight: bold; }
+    .chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .chart-card { min-height: 330px; }
+    .chart-card canvas { max-height: 245px; }
+    a.button { display: inline-block; background: #1e3a8a; color: white; padding: 10px 14px; border-radius: 4px; text-decoration: none; margin: 4px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 9px; border-bottom: 1px solid #ddd; text-align: left; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/dashboard">Ibex System</a>
+    <a href="/dashboard">Dashboard</a>
+    <% if (user.role === 'admin' || user.role === 'teacher') { %><a href="/students">Students</a><% } %>
+    <a href="/grades">Grades</a>
+    <a href="/attendance">Attendance</a>
+    <a href="/reports">Reports</a>
+    <span><%= user.name %> - <%= user.role %></span>
+    <a href="/logout">Logout</a>
+  </nav>
+  <main>
+    <section class="welcome">
+      <h1>Welcome, <%= user.name %></h1>
+      <span class="badge"><%= user.role %></span>
+    </section>
+
+    <% if (user.role === 'admin') { %>
+      <div class="grid">
+        <div class="card"><h2>Students</h2><div class="count"><%= data.totalStudents %></div></div>
+        <div class="card"><h2>Teachers</h2><div class="count"><%= data.totalTeachers %></div></div>
+        <div class="card"><h2>Parents</h2><div class="count"><%= data.totalParents %></div></div>
+        <div class="card"><h2>Users</h2><div class="count"><%= data.totalUsers %></div></div>
+        <div class="card"><h2>Fees Collected</h2><div class="money"><%= Number(data.totalFeesCollected).toFixed(2) %></div></div>
+        <div class="card"><h2>Fees Pending</h2><div class="money" style="color:#b91c1c"><%= Number(data.totalFeesPending).toFixed(2) %></div></div>
+      </div>
+      <section class="card"><h2>Administration</h2><a class="button" href="/students">Manage Students</a><a class="button" href="/users">Manage Users</a><a class="button" href="/debug">Debug Schema</a></section>
+      <section class="chart-grid">
+        <div class="card chart-card"><h2>Today's Attendance</h2><canvas id="attendanceChart"></canvas></div>
+        <div class="card chart-card"><h2>Performance by Class</h2><canvas id="performanceChart"></canvas></div>
+        <div class="card chart-card"><h2>Fees Collection</h2><canvas id="feesChart"></canvas></div>
+        <div class="card chart-card"><h2>Students by Class</h2><canvas id="studentCountChart"></canvas></div>
+      </section>
+    <% } else if (user.role === 'teacher') { %>
+      <section class="card"><h2>My Classes</h2>
+        <% if (data.classes && data.classes.length) { %><ul><% data.classes.forEach(item => { %><li><%= item.name %> <%= item.stream || '' %></li><% }); %></ul><% } else { %><p>No classes assigned.</p><% } %>
+        <a class="button" href="/grades#add">Add Grade</a><a class="button" href="/attendance">Mark Today's Attendance</a>
+      </section>
+    <% } else { %>
+      <section class="card">
+        <h2><%= user.role === 'parent' ? 'Child Information' : 'My Information' %></h2>
+        <% if (data.student) { %><p><strong>Name:</strong> <%= data.student.name %></p><p><strong>Class:</strong> <%= data.student.class %></p><% } else { %><p>No linked student record found.</p><% } %>
+      </section>
+      <section class="card" id="grades"><h2><%= user.role === 'parent' ? 'Latest Child Grades' : 'Latest Grades' %></h2>
+        <% if (data.grades && data.grades.length) { %><table><tr><th>Subject</th><th>Term</th><th>Score</th></tr><% data.grades.forEach(grade => { %><tr><td><%= grade.subject %></td><td><%= grade.term %></td><td><%= grade.score %></td></tr><% }); %></table><% } else { %><p>No grades available.</p><% } %>
+      </section>
+      <section class="card" id="attendance"><h2><%= user.role === 'parent' ? 'Child Attendance' : 'My Attendance' %></h2>
+        <p><strong><%= data.attendanceSummary ? data.attendanceSummary.percentage : 0 %>%</strong> attendance</p><div style="height:16px;background:#e5e7eb;border-radius:8px;overflow:hidden"><div style="height:100%;width:<%= data.attendanceSummary ? data.attendanceSummary.percentage : 0 %>%;background:#1e3a8a"></div></div>
+        <% if (data.attendance && data.attendance.length) { %><table><tr><th>Date</th><th>Status</th></tr><% data.attendance.forEach(record => { %><tr><td><%= record.date %></td><td><%= record.status %></td></tr><% }); %></table><% } else { %><p>No attendance records available.</p><% } %>
+      </section>
+    <% } %>
+  </main>
+  <% if (user.role === 'admin') { %>
+    <script>
+      const chartData = <%- JSON.stringify(chartData) %>;
+      const chartColors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+      new Chart(document.getElementById('attendanceChart'), { type: 'doughnut', data: { labels: ['Present', 'Absent', 'Late'], datasets: [{ data: [chartData.attendanceStats.present, chartData.attendanceStats.absent, chartData.attendanceStats.late], backgroundColor: ['#10b981', '#ef4444', '#f59e0b'], borderWidth: 0 }] }, options: { plugins: { legend: { position: 'bottom' } }, maintainAspectRatio: false } });
+      new Chart(document.getElementById('performanceChart'), { type: 'bar', data: { labels: chartData.classPerformance.map(item => item.class), datasets: [{ label: 'Average score', data: chartData.classPerformance.map(item => item.avg), backgroundColor: '#2563eb', borderRadius: 6 }] }, options: { scales: { y: { beginAtZero: true, max: 100 } }, maintainAspectRatio: false } });
+      new Chart(document.getElementById('feesChart'), { type: 'line', data: { labels: chartData.feesMonthly.map(item => item.month), datasets: [{ label: 'Collected', data: chartData.feesMonthly.map(item => item.total), borderColor: '#10b981', backgroundColor: '#10b98122', fill: true, tension: .35 }] }, options: { scales: { y: { beginAtZero: true } }, maintainAspectRatio: false } });
+      new Chart(document.getElementById('studentCountChart'), { type: 'bar', data: { labels: chartData.studentCounts.map(item => item.class), datasets: [{ label: 'Students', data: chartData.studentCounts.map(item => item.count), backgroundColor: chartColors, borderRadius: 6 }] }, options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: false } });
+    </script>
+  <% } %>
+</body>
+</html>

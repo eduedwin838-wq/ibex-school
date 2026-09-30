@@ -2,7 +2,7 @@ const express = require("express");
 const mysql = require("mysql2");
 const session = require("express-session");
 const path = require("path");
-const bcrypt = require("bcrypt"); // <-- must be here
+const bcrypt = require("bcrypt");
 
 const app = express();
 const PORT = 3000;
@@ -17,11 +17,10 @@ app.use(
   session({ secret: "ibexsecret", resave: false, saveUninitialized: true }),
 );
 
-// CHANGE THIS PASSWORD TO YOURS
 const dbConnection = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "Eduedwin@74", // <--- put your mysql password here. leave "" if none
+  password: "Eduedwin@74",
   database: "students_db",
 });
 
@@ -38,11 +37,14 @@ function isLoggedIn(req, res, next) {
   res.redirect("/login");
 }
 
-app.get("/login", (req, res) => res.render("login"));
+app.get("/login", (req, res) =>
+  res.render("login", { error: null, registered: false }),
+);
 app.post("/login", (req, res) => {
-  req.session.user = { name: req.body.username };
-  res.redirect("/dashboard");
+  req.session.user = { name: req.body.username || req.body.email };
+  res.redirect("/students");
 });
+
 app.get("/dashboard", isLoggedIn, (req, res) =>
   res.render("dashboard", { user: req.session.user }),
 );
@@ -62,12 +64,12 @@ app.get("/students/add", isLoggedIn, (req, res) =>
 );
 
 app.post("/students/add", isLoggedIn, (req, res) => {
-  const { name, admission_no, class: student_class, parent_phone } = req.body;
+  const { name, admissionNo, class: student_class, parentContact } = req.body;
   const sql =
-    "INSERT INTO students (name, admission_no, class, parent_phone) VALUES (?,?,?,?)";
+    "INSERT INTO students (name, admissionNo, class, parentContact) VALUES (?,?,?,?)";
   dbConnection.query(
     sql,
-    [name, admission_no, student_class, parent_phone],
+    [name, admissionNo, student_class, parentContact],
     (err) => {
       if (err)
         return res.send(
@@ -84,6 +86,7 @@ app.get("/students/edit/:id", isLoggedIn, (req, res) => {
     [req.params.id],
     (err, results) => {
       if (err) return res.send("DB Error: " + err.sqlMessage);
+      if (results.length === 0) return res.send("Student not found");
       res.render("edit_student", {
         student: results[0],
         user: req.session.user,
@@ -93,12 +96,12 @@ app.get("/students/edit/:id", isLoggedIn, (req, res) => {
 });
 
 app.post("/students/edit/:id", isLoggedIn, (req, res) => {
-  const { name, admission_no, class: student_class, parent_phone } = req.body;
+  const { name, admissionNo, class: student_class, parentContact } = req.body;
   const sql =
-    "UPDATE students SET name=?, admission_no=?, class=?, parent_phone=? WHERE id=?";
+    "UPDATE students SET name=?, admissionNo=?, class=?, parentContact=? WHERE id=?";
   dbConnection.query(
     sql,
-    [name, admission_no, student_class, parent_phone, req.params.id],
+    [name, admissionNo, student_class, parentContact, req.params.id],
     (err) => {
       if (err) return res.send("DB Error: " + err.sqlMessage);
       res.redirect("/students");
@@ -107,8 +110,13 @@ app.post("/students/edit/:id", isLoggedIn, (req, res) => {
 });
 
 app.get("/students/delete/:id", isLoggedIn, (req, res) => {
-  dbConnection.query("DELETE FROM students WHERE id=?", [req.params.id], () =>
-    res.redirect("/students"),
+  dbConnection.query(
+    "DELETE FROM students WHERE id=?",
+    [req.params.id],
+    (err) => {
+      if (err) return res.send("Delete Error: " + err.sqlMessage);
+      res.redirect("/students");
+    },
   );
 });
 
@@ -119,19 +127,16 @@ app.get("/logout", (req, res) => {
 app.get("/", (req, res) => {
   res.redirect("/login");
 });
-// SHOW REGISTER PAGE
+
 app.get("/register", (req, res) => {
   res.render("register", { error: null });
 });
 
-// HANDLE REGISTER FORM SUBMIT
 app.post("/register", async (req, res) => {
   const { username, email, password, role } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
-
   const sql =
     "INSERT INTO users (name, email, password, role) VALUES (?,?,?,?)";
-
   dbConnection.query(sql, [username, email, hashedPassword, role], (err) => {
     if (err) {
       if (err.code === "ER_DUP_ENTRY")

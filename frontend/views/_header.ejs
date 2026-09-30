@@ -15,9 +15,16 @@
 </head>
 <body>
 <nav>
-  <a href="/">Home</a>
+  <a href="/">Ibex System</a>
   <% if(typeof user !== 'undefined' && user) { %>
-    <span>Hi, <%= user.name %></span>
+    <a href="/dashboard">Dashboard</a>
+    <% if (user.role === 'admin' || user.role === 'teacher') { %><a href="/students">Students</a><% } %>
+    <a href="/grades">Grades</a>
+    <a href="/attendance">Attendance</a>
+    <a href="/reports">Reports</a>
+    <a href="/fees">Fees</a>
+    <% if (user.role === 'admin') { %><a href="/users">Users</a><% } %>
+    <span><%= user.name %> - <%= user.role %></span>
     <a href="/logout">Logout</a>
   <% } else { %>
     <a href="/login">Login</a>
