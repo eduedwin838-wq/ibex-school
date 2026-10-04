@@ -1,53 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Login</title>
-    <style>
-      body {
-        font-family: Arial;
-        background: #f4f4f4;
-        padding: 50px;
-        color: navy;
-      }
-      .box {
-        background: white;
-        padding: 30px;
-        width: 400px;
-        margin: auto;
-        border-radius: 8px;
-      }
-      input,
-      button {
-        padding: 10px;
-        margin: 8px 0;
-        width: 100%;
-        box-sizing: border-box;
-      }
-      button {
-        background:blue;
-        color: white;
-        border: none;
-        cursor: pointer;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="box">
-      <h2>Login</h2>
-      <% if (registered) { %><p style="color: green">Account created. Please log in.</p><% } %>
-      <% if (error) { %><p style="color: #b00020"><%= error %></p><% } %>
-      <form action="/login" method="POST">
-        <input name="email" type="email" placeholder="Email" required />
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          required
-        />
-        <button type="submit">Login</button>
-      </form>
-      <p>No account? <a href="/register">Register</a></p>
-    </div>
-  </body>
-</html>
+<%- include('_header') %>
+<style>
+  .auth-card { width: min(440px, 100%); margin: 52px auto; padding: 34px; }
+  .auth-card h1 { margin-bottom: 8px; text-align: center; }
+  .auth-subtitle { margin: 0 0 24px; color: #94A3B8; text-align: center; }
+  .auth-card form { display: grid; gap: 14px; }
+  .auth-card form button { width: 100%; margin-top: 5px; }
+  .auth-message { padding: 12px 14px; border-radius: 9px; background: #12332C; color: #6EE7B7; font-size: 13px; }
+  .auth-error { background: #3B202B; color: #FDA4AF; }
+  .auth-footnote { margin: 20px 0 0; text-align: center; font-size: 13px; }
+  .auth-footnote a { color: #4F46E5; font-weight: 700; text-decoration: none; }
+  @media (max-width: 600px) { .auth-card { margin: 28px auto; padding: 24px; } }
+</style>
+<main>
+  <section class="panel auth-card">
+    <h1>Welcome back</h1>
+    <p class="auth-subtitle">Sign in to your Ibex Student System account.</p>
+    <% if (registered) { %><p class="auth-message">Account created. Please log in.</p><% } %>
+    <% if (error) { %><p class="auth-message auth-error"><%= error %></p><% } %>
+    <form action="/login" method="POST">
+      <label>Email<input name="email" type="email" placeholder="Email address" required></label>
+      <label>Password<input name="password" type="password" placeholder="Password" required></label>
+      <button type="submit">Login</button>
+    </form>
+    <p class="auth-footnote">No account? <a href="/register">Register</a></p>
+  </section>
+</main>
+<%- include('_footer') %>

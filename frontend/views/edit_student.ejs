@@ -1,41 +1,18 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Edit Student</title>
-  </head>
-  <body style="font-family: Arial; padding: 20px">
-    <h2>Edit Student: <%= student.name %></h2>
+<%- include('_header', { user }) %>
+<style>
+  .form-card { max-width: 620px; margin: 0 auto; }
+  .form-card form { display: grid; gap: 16px; }
+</style>
+<main>
+  <section class="panel form-card">
+    <h1>Edit Student: <%= student.name %></h1>
     <form method="POST" action="/students/edit/<%= student.id %>">
-      <label
-        >Name:
-        <input
-          type="text"
-          name="name"
-          value="<%= student.name %>"
-          required /></label
-      ><br /><br />
-      <label
-        >Admission No:
-        <input
-          type="text"
-          name="admissionNo"
-          value="<%= student.admissionNo %>"
-          required /></label
-      ><br /><br />
-      <label
-        >Class:
-        <input type="text" name="class" value="<%= student.class %>" /></label
-      ><br /><br />
-      <label
-        >Parent Phone:
-        <input
-          type="text"
-          name="parentContact"
-          value="<%= student.parentContact %>" /></label
-      ><br /><br />
-      <button type="submit">Update</button>
+      <label>Name<input type="text" name="name" value="<%= student.name %>" required></label>
+      <label>Admission number<input type="text" name="admissionNo" value="<%= student.admissionNo %>" required></label>
+      <label>Class<input type="text" name="class" value="<%= student.class %>"></label>
+      <label>Parent phone<input type="text" name="parentContact" value="<%= student.parentContact %>"></label>
+      <div><button type="submit">Update Student</button> <a class="button" href="/students">Back to Students</a></div>
     </form>
-    <br />
-    <a href="/students">Back to Students</a>
-  </body>
-</html>
+  </section>
+</main>
+<%- include('_footer') %>

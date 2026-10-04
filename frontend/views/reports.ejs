@@ -1,6 +1,44 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reports | Ibex System</title><style>body{font-family:Arial;margin:0;background:#f4f7fc;color:#1f2937}nav{background:#1e3a8a;padding:16px 5%;display:flex;gap:18px;flex-wrap:wrap}nav a,nav span{color:#fff;text-decoration:none}nav a:first-child{font-weight:bold;margin-right:auto}main{width:90%;max-width:1000px;margin:30px auto}.panel{background:#fff;padding:22px;margin-bottom:20px;border-radius:8px;box-shadow:0 3px 12px #00000012}input,button{padding:9px;margin:4px}button,.button{background:#1e3a8a;color:#fff;border:0;padding:10px 14px;text-decoration:none;cursor:pointer}table{border-collapse:collapse;width:100%}th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}.summary{display:flex;gap:30px;flex-wrap:wrap}.metric{font-size:1.8rem;color:#1e3a8a;font-weight:bold}</style></head>
-<body><nav><a href="/dashboard">Ibex System</a><a href="/dashboard">Dashboard</a><a href="/reports">Reports</a><span><%= user.name %> - <%= user.role %></span><a href="/logout">Logout</a></nav><main>
-<% if (canManage) { %><section class="panel"><h2>Find Student Report</h2><form method="GET" action="/reports"><input name="search" value="<%= search %>" placeholder="Search name or admission no"><button type="submit">Search</button></form><% if (students.length) { %><table><tr><th>Name</th><th>Admission No</th><th>Class</th><th>Report</th></tr><% students.forEach(student => { %><tr><td><%= student.name %></td><td><%= student.admissionNo %></td><td><%= student.class %></td><td><a class="button" href="/reports?studentId=<%= student.id %>">View</a></td></tr><% }) %></table><% } else if (search) { %><p>No matching students.</p><% } %></section><% } %>
-<% if (report) { %><section class="panel" id="report"><h2>Report Card: <%= report.student.name %></h2><p>Class: <%= report.student.class || '' %></p><div class="summary"><div>Mean score<div class="metric"><%= report.mean %></div></div><div>Grade<div class="metric"><%= report.grade %></div></div><div>Attendance<div class="metric"><%= report.attendance.percentage %>%</div></div></div><h3>Subject Results</h3><table><tr><th>Subject</th><th>Term</th><th>Score</th></tr><% report.grades.forEach(item => { %><tr><td><%= item.subject %></td><td><%= item.term %></td><td><%= item.score %></td></tr><% }) %></table><p><a class="button" href="/reports?studentId=<%= report.student.id %>&download=1">Download</a> <button type="button" onclick="window.print()">Print</button></p></section><% } else if (!canManage) { %><section class="panel"><p>No linked student report found.</p></section><% } %>
-</main></body></html>
+<%- include('_header', { user }) %>
+<style>
+  .search-form { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .search-form input { width: min(100%, 360px); }
+  .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 20px 0; }
+  .metric-card { padding: 16px; border: 1px solid #263245; border-radius: 12px; background: #172033; color: #94A3B8; font-size: 12px; }
+  .metric { margin-top: 6px; color: #A5B4FC; font-size: 1.8rem; font-weight: 800; }
+  @media (max-width: 600px) { .summary { grid-template-columns: 1fr; } }
+</style>
+<main>
+  <% if (canManage) { %>
+    <section class="panel">
+      <h1>Find Student Report</h1>
+      <form class="search-form" method="GET" action="/reports">
+        <input name="search" value="<%= search %>" placeholder="Search name or admission no">
+        <button type="submit"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>Search</button>
+      </form>
+      <% if (students.length) { %>
+        <div class="table-wrap"><table><thead><tr><th>Name</th><th>Admission No.</th><th>Class</th><th>Report</th></tr></thead><tbody>
+          <% students.forEach(student => { %><tr><td><%= student.name %></td><td><%= student.admissionNo %></td><td><%= student.class %></td><td><a class="button" href="/reports?studentId=<%= student.id %>">View</a></td></tr><% }) %>
+        </tbody></table></div>
+      <% } else if (search) { %><p>No matching students.</p><% } %>
+    </section>
+  <% } %>
+  <% if (report) { %>
+    <section class="panel" id="report">
+      <h1>Report Card: <%= report.student.name %></h1>
+      <p>Class: <%= report.student.class || '' %></p>
+      <div class="summary">
+        <div class="metric-card">Mean score<div class="metric"><%= report.mean %></div></div>
+        <div class="metric-card">Grade<div class="metric"><%= report.grade %></div></div>
+        <div class="metric-card">Attendance<div class="metric"><%= report.attendance.percentage %>%</div></div>
+      </div>
+      <h2>Subject Results</h2>
+      <div class="table-wrap"><table><thead><tr><th>Subject</th><th>Term</th><th>Score</th></tr></thead><tbody>
+        <% report.grades.forEach(item => { %><tr><td><%= item.subject %></td><td><%= item.term %></td><td><%= item.score %></td></tr><% }) %>
+      </tbody></table></div>
+      <p><a class="button" href="/reports?studentId=<%= report.student.id %>&download=1"><i class="fa-solid fa-download" aria-hidden="true"></i>Download</a> <button type="button" onclick="window.print()">Print</button></p>
+    </section>
+  <% } else if (!canManage) { %>
+    <section class="panel"><p>No linked student report found.</p></section>
+  <% } %>
+</main>
+<%- include('_footer') %>

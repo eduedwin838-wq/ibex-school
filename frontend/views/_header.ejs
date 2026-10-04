@@ -2,33 +2,286 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ibex Student System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
-    body { font-family: Arial; margin: 0; background: #f4f4f4; }
-    nav { background: #333; color: white; padding: 1rem; }
-    nav a, nav span { color: white; margin-right: 15px; text-decoration: none; }
-    .container { padding: 20px; background: white; margin: 20px; border-radius: 8px; }
-    input, select, button { padding: 8px; margin: 5px 0; width: 300px; display: block; }
-    button { background: #333; color: white; border: none; cursor: pointer; }
-    footer { text-align: center; padding: 1rem; background: #333; color: white; }
+    :root {
+      color-scheme: dark;
+      --navy: #0F172A;
+      --indigo: #4F46E5;
+      --background: #0B1120;
+      --surface: #111827;
+      --surface-raised: #172033;
+      --text: #E2E8F0;
+      --text-muted: #94A3B8;
+      --line: #263245;
+      --shadow: 0 12px 30px rgba(0, 0, 0, .22);
+    }
+    * { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--background); color-scheme: dark; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--background);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a, button, input, select, textarea { font: inherit; }
+    a, button { transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+    .topbar {
+      position: sticky;
+      z-index: 20;
+      top: 0;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 24px;
+      min-height: 76px;
+      padding: 0 clamp(20px, 5vw, 76px);
+      border-bottom: 1px solid var(--line);
+      background: rgba(17, 24, 39, .96);
+      box-shadow: 0 5px 22px rgba(0, 0, 0, .22);
+      backdrop-filter: blur(14px);
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      width: max-content;
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.045em;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .brand-mark {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border-radius: 12px;
+      background: #24234B;
+      color: #A5B4FC;
+      font-size: 23px;
+      letter-spacing: 0;
+    }
+    .primary-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .primary-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 42px;
+      padding: 0 12px;
+      border-radius: 10px;
+      color: #CBD5E1;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .primary-nav a i { color: #A5B4FC; font-size: 13px; }
+    .primary-nav a:hover,
+    .primary-nav a:focus-visible {
+      background: #24234B;
+      color: #C7D2FE;
+      outline: none;
+    }
+    .account-area {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 13px;
+      min-width: 0;
+    }
+    .user-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .avatar {
+      display: grid;
+      flex: 0 0 38px;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border: 1px solid #3B3B70;
+      border-radius: 50%;
+      background: #24234B;
+      color: #C7D2FE;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .logout-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 0 13px;
+      border: 1px solid #7F1D1D;
+      border-radius: 10px;
+      background: transparent;
+      color: #FCA5A5;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .logout-button:hover { border-color: #EF4444; background: #351D29; }
+    .auth-links { display: flex; justify-content: flex-end; gap: 8px; }
+    .auth-links a {
+      padding: 10px 13px;
+      border-radius: 9px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .auth-links a:last-child { background: var(--indigo); color: #fff; }
+    .auth-links a:hover { background: #24234B; color: #C7D2FE; }
+    .auth-links a:last-child:hover { background: #4338CA; color: #fff; }
+    .page-content { min-height: calc(100vh - 150px); }
+    main {
+      width: min(1200px, calc(100% - 48px));
+      margin: 34px auto 48px;
+    }
+    .panel, .card, .box, .welcome {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .panel, .box { padding: clamp(20px, 3vw, 30px); }
+    .panel + .panel, .card + .panel { margin-top: 20px; }
+    h1, h2, h3 { color: var(--text); letter-spacing: -.035em; }
+    h1 { margin: 0 0 22px; font-size: clamp(1.55rem, 3vw, 2rem); }
+    h2 { margin: 0 0 18px; font-size: 1.2rem; }
+    p { color: #CBD5E1; line-height: 1.65; }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #111827;
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid #263245; }
+    th {
+      background: #172033;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    td { color: #CBD5E1; font-size: 13px; }
+    tbody tr:last-child td, table tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #192337; }
+    label { display: grid; gap: 7px; color: #CBD5E1; font-size: 13px; font-weight: 600; }
+    input, select, textarea {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid #334155;
+      border-radius: 9px;
+      background: #0F172A;
+      color: var(--text);
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #818CF8;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
+    }
+    button, .button, a.button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 0 16px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      background: var(--indigo);
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    button:hover, .button:hover, a.button:hover {
+      background: #4338CA;
+      box-shadow: 0 5px 14px rgba(79, 70, 229, .2);
+      transform: translateY(-1px);
+    }
+    form { color: var(--text); }
+    form button { width: auto; }
+    .delete { background: #991B1B; }
+    .delete:hover { background: #7F1D1D; }
+    .footer {
+      padding: 22px 20px;
+      border-top: 1px solid var(--line);
+      background: #111827;
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 12px;
+    }
+    .footer p { margin: 0; color: inherit; }
+    @media (max-width: 1080px) {
+      .topbar { grid-template-columns: auto 1fr; gap: 8px 20px; padding-top: 12px; padding-bottom: 12px; }
+      .brand { grid-column: 1; }
+      .account-area, .auth-links { grid-column: 2; grid-row: 1; }
+      .primary-nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; flex-wrap: wrap; }
+    }
+    @media (max-width: 600px) {
+      .topbar { grid-template-columns: 1fr; gap: 8px; }
+      .brand, .primary-nav, .account-area, .auth-links { grid-column: 1; grid-row: auto; }
+      .account-area, .auth-links { justify-content: flex-start; }
+      .primary-nav { gap: 2px; }
+      .primary-nav a { min-height: 38px; padding: 0 9px; font-size: 12px; }
+      main { width: min(100% - 28px, 1200px); margin-top: 22px; }
+      .table-wrap table { min-width: 560px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
   </style>
 </head>
 <body>
-<nav>
-  <a href="/">Ibex System</a>
-  <% if(typeof user !== 'undefined' && user) { %>
-    <a href="/dashboard">Dashboard</a>
-    <% if (user.role === 'admin' || user.role === 'teacher') { %><a href="/students">Students</a><% } %>
-    <a href="/grades">Grades</a>
-    <a href="/attendance">Attendance</a>
-    <a href="/reports">Reports</a>
-    <a href="/fees">Fees</a>
-    <% if (user.role === 'admin') { %><a href="/users">Users</a><% } %>
-    <span><%= user.name %> - <%= user.role %></span>
-    <a href="/logout">Logout</a>
-  <% } else { %>
-    <a href="/login">Login</a>
-    <a href="/register">Register</a>
-  <% } %>
-</nav>
-<div class="container">
+  <header class="topbar">
+    <a class="brand" href="/dashboard"><span class="brand-mark" aria-hidden="true">⛰️</span><span>Ibex System</span></a>
+    <% if(typeof user !== 'undefined' && user) { %>
+      <nav class="primary-nav" aria-label="Main navigation">
+        <a href="/dashboard"><i class="fa-solid fa-house" aria-hidden="true"></i>Dashboard</a>
+        <% if (user.role === 'admin' || user.role === 'teacher') { %><a href="/students"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i>Students</a><% } %>
+        <a href="/teachers"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i>Teachers</a>
+        <a href="/grades"><i class="fa-solid fa-chart-column" aria-hidden="true"></i>Grades</a>
+        <a href="/fees"><i class="fa-solid fa-wallet" aria-hidden="true"></i>Fees</a>
+        <a href="/reports"><i class="fa-solid fa-file-lines" aria-hidden="true"></i>Reports</a>
+      </nav>
+      <div class="account-area">
+        <span class="user-badge"><span class="avatar" aria-hidden="true"><%= String(user.name || 'D').charAt(0).toUpperCase() %></span><span><%= user.name %> - <%= user.role %></span></span>
+        <a class="logout-button" href="/logout"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>Logout</a>
+      </div>
+    <% } else { %>
+      <div class="auth-links">
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+      </div>
+    <% } %>
+  </header>
+  <div class="page-content">

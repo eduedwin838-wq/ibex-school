@@ -1,8 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Grades | Ibex System</title><style>body{font-family:Arial;margin:0;background:#f4f7fc;color:#1f2937}nav{background:#1e3a8a;padding:16px 5%;display:flex;gap:18px;flex-wrap:wrap}nav a,nav span{color:#fff;text-decoration:none}nav a:first-child{font-weight:bold;margin-right:auto}main{width:90%;max-width:1000px;margin:30px auto}.panel{background:#fff;padding:22px;margin-bottom:20px;border-radius:8px;box-shadow:0 3px 12px #00000012}input,select,button{padding:9px;margin:4px 0;box-sizing:border-box}button{background:#1e3a8a;color:white;border:0;padding:10px 16px;cursor:pointer}table{border-collapse:collapse;width:100%}th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}</style></head>
-<body><nav><a href="/dashboard">Ibex System</a><a href="/dashboard">Dashboard</a><a href="/grades">Grades</a><a href="/reports">Reports</a><span><%= user.name %> - <%= user.role %></span><a href="/logout">Logout</a></nav>
+<%- include('_header', { user }) %>
+<style>
+  .grade-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .grade-form button { align-self: end; }
+  .badge { display: inline-flex; padding: 5px 10px; border-radius: 999px; background: #24234B; color: #C7D2FE; font-size: 12px; font-weight: 700; text-transform: capitalize; }
+  @media (max-width: 600px) { .grade-form { grid-template-columns: 1fr; } }
+</style>
 <main>
-<% if (['admin','teacher'].includes(user.role)) { %><section class="panel" id="add"><h2>Add Grade</h2><form method="POST" action="/grades/add"><select name="studentId" required><option value="">Select student</option><% students.forEach(student => { %><option value="<%= student.id %>" <%= String(selectedStudentId) === String(student.id) ? 'selected' : '' %>><%= student.name %> (<%= student.admissionNo %>)</option><% }) %></select><input name="subject" placeholder="Subject" required><input name="term" placeholder="Term" required><input name="score" type="number" min="0" max="100" placeholder="Score" required><button type="submit">Save Grade</button></form></section><% } %>
-<section class="panel"><h2><%= user.role === 'student' ? 'My Grades' : user.role === 'parent' ? 'Child Grades' : 'Grades' %></h2><% if (grades.length) { %><table><tr><th>Student</th><th>Subject</th><th>Term</th><th>Score</th></tr><% grades.forEach(grade => { %><tr><td><%= grade.student_name %></td><td><%= grade.subject %></td><td><%= grade.term %></td><td><%= grade.score %></td></tr><% }) %></table><% } else { %><p>No grades found.</p><% } %></section>
-</main></body></html>
+  <% if (['admin','teacher'].includes(user.role)) { %>
+    <section class="panel">
+      <h1>Add Grade</h1>
+      <form class="grade-form" method="POST" action="/grades/add">
+        <label>Student<select name="studentId" required><option value="">Select student</option><% students.forEach(student => { %><option value="<%= student.id %>" <%= String(selectedStudentId) === String(student.id) ? 'selected' : '' %>><%= student.name %> (<%= student.admissionNo %>)</option><% }) %></select></label>
+        <label>Subject<input name="subject" placeholder="Subject" required></label>
+        <label>Term<input name="term" placeholder="Term" required></label>
+        <label>Score<input name="score" type="number" min="0" max="100" placeholder="Score" required></label>
+        <button type="submit">Save Grade</button>
+      </form>
+    </section>
+  <% } %>
+  <section class="panel">
+    <h1><%= user.role === 'student' ? 'My Grades' : user.role === 'parent' ? 'Child Grades' : 'Grades' %></h1>
+    <% if (grades.length) { %>
+      <div class="table-wrap"><table><thead><tr><th>Student</th><th>Subject</th><th>Term</th><th>Score</th></tr></thead><tbody>
+        <% grades.forEach(grade => { %><tr><td><%= grade.student_name %></td><td><%= grade.subject %></td><td><%= grade.term %></td><td><%= grade.score %></td></tr><% }) %>
+      </tbody></table></div>
+    <% } else { %><p>No grades found.</p><% } %>
+  </section>
+</main>
+<%- include('_footer') %>

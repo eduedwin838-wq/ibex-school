@@ -1,28 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Ibex Student System</title>
-    <style>
-      body {
-        font-family: Arial;
-        text-align: center;
-        padding: 100px;
-        background: #f4f4f4;
-      }
-      a {
-        padding: 10px 20px;
-        background: #333;
-        color: white;
-        text-decoration: none;
-        border-radius: 5px;
-        margin: 5px;
-      }
-    </style>
-  </head>
-  <body>
+<%- include('_header') %>
+<style>
+  .welcome-card { max-width: 760px; margin: 72px auto; padding: clamp(28px, 6vw, 56px); text-align: center; }
+  .welcome-icon { display: inline-grid; width: 64px; height: 64px; place-items: center; margin-bottom: 18px; border-radius: 20px; background: #24234B; color: #C7D2FE; font-size: 34px; }
+  .welcome-card h1 { margin-bottom: 10px; }
+  .welcome-card p { margin: 0 auto 24px; max-width: 520px; }
+  .welcome-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+</style>
+<main>
+  <section class="panel welcome-card">
+    <span class="welcome-icon" aria-hidden="true">⛰️</span>
     <h1>Ibex Student System</h1>
-    <a href="/login">Login</a>
-    <a href="/register">Register</a>
-  </body>
-</html>
+    <p>A clear, connected way to manage student records, academics, attendance and school fees.</p>
+    <div class="welcome-actions"><a class="button" href="/login">Login</a><a class="button" href="/register">Register</a></div>
+  </section>
+</main>
+<%- include('_footer') %>

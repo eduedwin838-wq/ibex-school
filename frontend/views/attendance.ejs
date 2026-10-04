@@ -1,5 +1,30 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Attendance | Ibex System</title><style>body{font-family:Arial;margin:0;background:#f4f7fc;color:#1f2937}nav{background:#1e3a8a;padding:16px 5%;display:flex;gap:18px;flex-wrap:wrap}nav a,nav span{color:#fff;text-decoration:none}nav a:first-child{font-weight:bold;margin-right:auto}main{width:90%;max-width:1000px;margin:30px auto}.panel{background:#fff;padding:22px;margin-bottom:20px;border-radius:8px;box-shadow:0 3px 12px #00000012}button{background:#1e3a8a;color:#fff;border:0;padding:10px 16px;cursor:pointer}table{border-collapse:collapse;width:100%}th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}.percentage{font-size:2.5rem;color:#1e3a8a;font-weight:bold}</style></head>
-<body><nav><a href="/dashboard">Ibex System</a><a href="/dashboard">Dashboard</a><a href="/attendance">Attendance</a><a href="/reports">Reports</a><span><%= user.name %> - <%= user.role %></span><a href="/logout">Logout</a></nav><main>
-<% if (canManage) { %><section class="panel"><h2>Mark Attendance for <%= today %></h2><form method="POST" action="/attendance/mark"><input type="hidden" name="date" value="<%= today %>"><table><tr><th>Student</th><th>Class</th><th>Status</th></tr><% students.forEach(student => { %><tr><td><%= student.name %> (<%= student.admissionNo %>)</td><td><%= student.class %></td><td><select name="status[<%= student.id %>]" required><option value="present" <%= recordByStudent[student.id] === 'present' ? 'selected' : '' %>>Present</option><option value="absent" <%= recordByStudent[student.id] === 'absent' ? 'selected' : '' %>>Absent</option><option value="late" <%= recordByStudent[student.id] === 'late' ? 'selected' : '' %>>Late</option></select></td></tr><% }) %></table><br><button type="submit">Save Today's Attendance</button></form></section><% } else { %><section class="panel"><h2><%= user.role === 'parent' ? 'Child Attendance' : 'My Attendance' %></h2><div class="percentage"><%= summary.percentage %>%</div><p><%= summary.attended %> attended out of <%= summary.total %> recorded days. Late arrivals count as attended.</p><table><tr><th>Date</th><th>Status</th></tr><% records.forEach(record => { %><tr><td><%= record.date %></td><td><%= record.status %></td></tr><% }) %></table></section><% } %>
-</main></body></html>
+<%- include('_header', { user }) %>
+<style>
+  .percentage { margin: 0 0 12px; color: #4F46E5; font-size: 2.5rem; font-weight: 800; }
+  .attendance-form { display: grid; gap: 18px; }
+  .attendance-form select { min-width: 145px; }
+</style>
+<main>
+  <% if (canManage) { %>
+    <section class="panel">
+      <h1>Mark Attendance <span style="color:#94A3B8;font-size:14px;font-weight:500"><%= today %></span></h1>
+      <form class="attendance-form" method="POST" action="/attendance/mark">
+        <input type="hidden" name="date" value="<%= today %>">
+        <div class="table-wrap"><table><thead><tr><th>Student</th><th>Class</th><th>Status</th></tr></thead><tbody>
+          <% students.forEach(student => { %><tr><td><%= student.name %> (<%= student.admissionNo %>)</td><td><%= student.class %></td><td><select name="status[<%= student.id %>]" required><option value="present" <%= recordByStudent[student.id] === 'present' ? 'selected' : '' %>>Present</option><option value="absent" <%= recordByStudent[student.id] === 'absent' ? 'selected' : '' %>>Absent</option><option value="late" <%= recordByStudent[student.id] === 'late' ? 'selected' : '' %>>Late</option></select></td></tr><% }) %>
+        </tbody></table></div>
+        <button type="submit">Save Today's Attendance</button>
+      </form>
+    </section>
+  <% } else { %>
+    <section class="panel">
+      <h1><%= user.role === 'parent' ? 'Child Attendance' : 'My Attendance' %></h1>
+      <div class="percentage"><%= summary.percentage %>%</div>
+      <p><%= summary.attended %> attended out of <%= summary.total %> recorded days. Late arrivals count as attended.</p>
+      <div class="table-wrap"><table><thead><tr><th>Date</th><th>Status</th></tr></thead><tbody>
+        <% records.forEach(record => { %><tr><td><%= record.date %></td><td><%= record.status %></td></tr><% }) %>
+      </tbody></table></div>
+    </section>
+  <% } %>
+</main>
+<%- include('_footer') %>

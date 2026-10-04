@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, "../frontend/public")));
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "Eduedwin@74", // weka password kama uko nayo
+  password: "Eduedwin@74",
   database: "students_db",
 });
 
@@ -137,8 +137,14 @@ const getStudentReport = async (studentId) => {
 };
 
 const getAdminDashboardData = async () => {
-  const [feesSummary, attendanceRows, performanceRows, feesMonthly, classRows] =
-    await Promise.all([
+  const [
+    feesSummary,
+    attendanceRows,
+    performanceRows,
+    feesMonthly,
+    classRows,
+    recentStudents,
+  ] = await Promise.all([
       query(
         "SELECT COALESCE(SUM(paid_amount), 0) AS collected, COALESCE(SUM(balance), 0) AS pending FROM fees",
       ),
@@ -154,6 +160,9 @@ const getAdminDashboardData = async () => {
       query(
         "SELECT class, COUNT(*) AS count FROM students WHERE class IS NOT NULL AND class <> '' GROUP BY class ORDER BY class",
       ),
+      query(
+        "SELECT id, name, admissionNo, class FROM students ORDER BY id DESC LIMIT 5",
+      ),
     ]);
 
   const attendanceStats = { present: 0, absent: 0, late: 0 };
@@ -163,6 +172,7 @@ const getAdminDashboardData = async () => {
   return {
     totalFeesCollected: Number(feesSummary[0].collected) || 0,
     totalFeesPending: Number(feesSummary[0].pending) || 0,
+    recentStudents,
     chartData: {
       attendanceStats,
       classPerformance: performanceRows.map((row) => ({
@@ -975,5 +985,68 @@ app.get(
     );
   },
 );
+
+app.post(
+  "/students/edit/:id",
+  isAuthenticated,
+  authorizeRoles(["admin", "teacher"]),
+  async (req, res) => {
+    const {
+      name,
+      admissionNo,
+      class: className,
+      parentContact,
+      admission_no,
+      parent_phone,
+    } = req.body;
+
+    const finalAdmissionNo = admissionNo || admission_no;
+    const finalContact = parentContact || parent_phone;
+
+    try {
+      const sql =
+        "UPDATE students SET name = ?, admissionNo = ?, class = ?, parentContact = ? WHERE id = ?";
+      await query(sql, [name, finalAdmissionNo, className, finalContact, req.params.id]);
+      res.redirect("/students");
+    } catch (error) {
+      console.log("Student update error:", error.message);
+      res.status(500).send("Could not update student.");
+    }
+  },
+);
+
+app.get(
+  "/students/delete/:id",
+  isAuthenticated,
+  authorizeRoles(["admin", "teacher"]),
+  async (req, res) => {
+    try {
+      await query("DELETE FROM students WHERE id = ?", [req.params.id]);
+      res.redirect("/students");
+    } catch (error) {
+      console.log("Student delete error:", error.message);
+      res.status(500).send("Could not delete student.");
+    }
+  },
+);
+
+app.post(
+  "/students/delete/:id",
+  isAuthenticated,
+  authorizeRoles(["admin", "teacher"]),
+  async (req, res) => {
+    try {
+      await query("DELETE FROM students WHERE id = ?", [req.params.id]);
+      res.redirect("/students");
+    } catch (error) {
+      console.log("Student delete error:", error.message);
+      res.status(500).send("Could not delete student.");
+    }
+  },
+);
+
+app.use((req, res) => {
+  res.status(404).render("404");
+});
 
 // The database connection and migrations are initialized before serving requests.

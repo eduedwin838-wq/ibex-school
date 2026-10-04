@@ -1,137 +1,65 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Register - Ibex Student System</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: white;
-      padding: 30px;
-      width: 400px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 5px;
-      color: #333;
-    }
-    .subtitle {
-      text-align: center;
-      color: #777;
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-    input, select {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-sizing: border-box;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .error {
-      background: #ffe6e6;
-      color: red;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 15px;
-      text-align: center;
-    }
-    .link {
-      text-align: center;
-      margin-top: 15px;
-      font-size: 14px;
-    }
-    .link a {
-      color: #007bff;
-      text-decoration: none;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>Create Account</h2>
-    <p class="subtitle">Ibex Student Management System</p>
-
-    <% if(error) { %>
-      <div class="error"><%= error %></div>
-    <% } %>
-
+<%- include('_header') %>
+<style>
+  .auth-card { width: min(560px, 100%); margin: 38px auto; padding: 32px; }
+  .auth-card h1 { margin-bottom: 7px; text-align: center; }
+  .auth-subtitle { margin: 0 0 24px; color: #94A3B8; text-align: center; }
+  .auth-card form { display: grid; gap: 13px; }
+  .auth-card form button { width: 100%; margin-top: 5px; }
+  .auth-error { padding: 12px 14px; border-radius: 9px; background: #3B202B; color: #FDA4AF; font-size: 13px; }
+  .auth-footnote { margin: 20px 0 0; text-align: center; font-size: 13px; }
+  .auth-footnote a { color: #4F46E5; font-weight: 700; text-decoration: none; }
+  @media (max-width: 600px) { .auth-card { margin: 24px auto; padding: 22px; } }
+</style>
+<main>
+  <section class="panel auth-card">
+    <h1>Create Account</h1>
+    <p class="auth-subtitle">Ibex Student Management System</p>
+    <% if(error) { %><div class="auth-error"><%= error %></div><% } %>
     <form method="POST" action="/register">
-      <input name="name" placeholder="Full Name" required>
-      <input name="email" type="email" placeholder="Email Address" required>
-      <input name="password" type="password" placeholder="Password" required>
-      <input name="confirmPassword" type="password" placeholder="Confirm Password">
-      
-      <select name="role" required>
-        <option value="" disabled selected>Select Role</option>
-        <option value="admin">Admin</option>
-        <option value="teacher">Teacher</option>
-        <option value="student">Student</option>
-        <option value="parent">Parent</option>
-      </select>
-
+      <label>Full name<input name="name" placeholder="Full name" required></label>
+      <label>Email address<input name="email" type="email" placeholder="Email address" required></label>
+      <label>Password<input name="password" type="password" placeholder="Password" required></label>
+      <label>Confirm password<input name="confirmPassword" type="password" placeholder="Confirm password"></label>
+      <label>Account type
+        <select name="role" required>
+          <option value="" disabled selected>Select role</option>
+          <option value="admin">Admin</option>
+          <option value="teacher">Teacher</option>
+          <option value="student">Student</option>
+          <option value="parent">Parent</option>
+        </select>
+      </label>
       <div id="studentFields" hidden>
-        <input name="admissionNo" placeholder="Admission No">
-        <input name="class" placeholder="Class">
+        <label>Admission number<input name="admissionNo" placeholder="Admission number"></label>
+        <label>Class<input name="class" placeholder="Class"></label>
       </div>
       <div id="teacherFields" hidden>
-        <input name="subject" placeholder="Subject">
-        <input name="qualification" placeholder="Qualification">
-        <input name="tscNo" placeholder="TSC No">
+        <label>Subject<input name="subject" placeholder="Subject"></label>
+        <label>Qualification<input name="qualification" placeholder="Qualification"></label>
+        <label>TSC number<input name="tscNo" placeholder="TSC number"></label>
       </div>
       <div id="parentFields" hidden>
-        <input name="childAdmissionNo" placeholder="Child Admission No">
-        <input name="phone" placeholder="Phone">
+        <label>Child admission number<input name="childAdmissionNo" placeholder="Child admission number"></label>
+        <label>Phone<input name="phone" placeholder="Phone"></label>
       </div>
-      <div id="adminFields" hidden>
-        <input name="adminSecret" placeholder="Admin Secret Code" type="password">
-      </div>
-
+      <div id="adminFields" hidden><label>Admin secret code<input name="adminSecret" placeholder="Admin secret code" type="password"></label></div>
       <button type="submit">Register</button>
     </form>
-
-    <div class="link">
-      Already have an account? <a href="/login">Login here</a>
-    </div>
-  </div>
-  <script>
-    const roleSelect = document.querySelector('select[name="role"]');
-    const sections = {
-      student: document.getElementById("studentFields"),
-      teacher: document.getElementById("teacherFields"),
-      parent: document.getElementById("parentFields"),
-      admin: document.getElementById("adminFields"),
-    };
-    roleSelect.addEventListener("change", () => {
-      Object.entries(sections).forEach(([role, section]) => {
-        section.hidden = role !== roleSelect.value;
-      });
+    <p class="auth-footnote">Already have an account? <a href="/login">Login here</a></p>
+  </section>
+</main>
+<script>
+  const roleSelect = document.querySelector('select[name="role"]');
+  const sections = {
+    student: document.getElementById("studentFields"),
+    teacher: document.getElementById("teacherFields"),
+    parent: document.getElementById("parentFields"),
+    admin: document.getElementById("adminFields"),
+  };
+  roleSelect.addEventListener("change", () => {
+    Object.entries(sections).forEach(([role, section]) => {
+      section.hidden = role !== roleSelect.value;
     });
-  </script>
-</body>
-</html>
+  });
+</script>
+<%- include('_footer') %>
