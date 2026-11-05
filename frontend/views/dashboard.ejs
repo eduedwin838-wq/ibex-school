@@ -1,181 +1,171 @@
-<%- include('_header', { user }) %>
+<%- include('_header', { user, termOptions, selectedTerm }) %>
 <% if (user.role === 'admin') { %><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><% } %>
 <style>
-  .dashboard { max-width: 1240px; }
-  .welcome {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    padding: 26px 30px;
-    margin-bottom: 24px;
-    background: linear-gradient(120deg, #111827 50%, #1A1A38);
-  }
-  .welcome h1 { margin: 0 0 6px; }
-  .welcome p { margin: 0; color: #94A3B8; }
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 8px 13px;
-    border: 1px solid #3B3B70;
-    border-radius: 999px;
-    background: #24234B;
-    color: #C7D2FE;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: capitalize;
-  }
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px;
-    margin-bottom: 22px;
-  }
-  .stat-card {
-    min-height: 174px;
-    padding: 22px;
-    border: 1px solid #263245;
-    border-radius: 16px;
-    background: #111827;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
-    transition: transform .2s ease, box-shadow .2s ease;
-  }
-  .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 32px rgba(0, 0, 0, .32);
-  }
-  .stat-icon {
-    display: grid;
-    width: 42px;
-    height: 42px;
-    place-items: center;
-    margin-bottom: 17px;
-    border-radius: 13px;
-    font-size: 16px;
-  }
-  .stat-icon.indigo { background: #24234B; color: #A5B4FC; }
-  .stat-icon.emerald { background: #12332C; color: #6EE7B7; }
-  .stat-icon.amber { background: #382B18; color: #FCD34D; }
-  .stat-icon.violet { background: #30234A; color: #C4B5FD; }
-  .stat-icon.rose { background: #3B202B; color: #FDA4AF; }
-  .stat-label { margin: 0 0 7px; color: #94A3B8; font-size: 12px; font-weight: 600; }
-  .stat-value { margin: 0; color: #F1F5F9; font-size: clamp(1.55rem, 3vw, 2rem); font-weight: 800; letter-spacing: -.05em; }
-  .dashboard-panel { padding: 24px; margin-bottom: 20px; }
-  .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-  .panel-heading h2 { margin: 0; }
-  .panel-heading a { color: #A5B4FC; font-size: 12px; font-weight: 700; text-decoration: none; }
-  .panel-heading a:hover { color: #C7D2FE; }
-  .overview-grid, .chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-  .chart-card { min-height: 330px; padding: 24px; }
-  .chart-card canvas { max-height: 245px; }
-  .overview-total { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid #263245; }
-  .overview-total:last-of-type { border-bottom: 0; }
-  .overview-total span { color: #94A3B8; font-size: 13px; }
-  .overview-total strong { color: #F1F5F9; font-size: 18px; }
-  .overview-note { margin: 14px 0 0; font-size: 12px; }
-  .action-links { display: flex; flex-wrap: wrap; gap: 10px; }
-  .action-links a { text-decoration: none; }
-  .percentage-track { height: 9px; overflow: hidden; border-radius: 99px; background: #334155; }
-  .percentage-track span { display: block; height: 100%; border-radius: inherit; background: #4F46E5; }
-  .attendance-score { margin: 4px 0 12px; color: #4F46E5; font-size: 30px; font-weight: 800; }
-  .dashboard ul { padding-left: 20px; color: #CBD5E1; line-height: 1.9; }
-  @media (max-width: 760px) {
-    .stats-grid { grid-template-columns: 1fr; }
-    .overview-grid, .chart-grid { grid-template-columns: 1fr; }
-    .welcome { align-items: flex-start; flex-direction: column; padding: 22px; }
-  }
+  .dashboard-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+  .dashboard-title h1 { margin-bottom: 5px; }
+  .dashboard-title p { margin: 0; color: #64748b; font-size: 13px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .kpi-card { min-width: 0; padding: 18px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+  .kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #64748b; font-size: 12px; font-weight: 500; }
+  .kpi-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 11px; background: #dcfce7; color: #15803d; }
+  .kpi-card:nth-child(2) .kpi-icon { background: #ffedd5; color: #c2410c; }
+  .kpi-value { margin: 12px 0 5px; color: #17212b; font-size: clamp(1.45rem, 2.5vw, 1.9rem); font-weight: 700; letter-spacing: -.04em; }
+  .kpi-note { margin: 0; color: #64748b; font-size: 11px; }
+  .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 18px; margin-bottom: 18px; }
+  .dashboard-panel { min-width: 0; padding: 20px; }
+  .dashboard-panel h2 { margin-bottom: 5px; }
+  .panel-note { margin: 0 0 16px; color: #64748b; font-size: 11px; }
+  .chart-container { position: relative; height: 280px; }
+  .table-wrap { margin-top: 12px; }
+  .quick-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .quick-actions .button { min-height: 48px; }
+  .balance-alert { color: #dc2626; font-weight: 700; }
+  .empty-state { padding: 20px; color: #64748b; text-align: center; font-size: 12px; }
+  .portal-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .portal-item { padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; }
+  .portal-item strong { display: block; margin-top: 6px; font-size: 18px; }
+  .portal-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  @media (max-width: 1000px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 720px) { .dashboard-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) { .kpi-grid, .portal-summary { grid-template-columns: 1fr; } .quick-actions { grid-template-columns: 1fr; } .dashboard-title { flex-direction: column; } }
 </style>
+
 <main class="dashboard">
-  <section class="welcome">
-    <div>
-      <h1>Welcome, <%= user.name %></h1>
-      <p>Here is your school overview and the latest activity.</p>
-    </div>
-    <span class="badge"><%= user.role %></span>
-  </section>
+  <div class="dashboard-title">
+    <div><h1>Welcome, <%= user.name %></h1><p>Your school at a glance.</p></div>
+    <% if (user.role === 'admin') { %><a class="button" href="/reports"><i class="fa-solid fa-file-lines" aria-hidden="true"></i>View reports</a><% } %>
+  </div>
 
   <% if (user.role === 'admin') { %>
-    <section class="stats-grid" aria-label="School statistics">
-      <article class="stat-card"><span class="stat-icon indigo"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i></span><p class="stat-label">Students</p><p class="stat-value"><%= data.totalStudents %></p></article>
-      <article class="stat-card"><span class="stat-icon emerald"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span><p class="stat-label">Teachers</p><p class="stat-value"><%= data.totalTeachers %></p></article>
-      <article class="stat-card"><span class="stat-icon amber"><i class="fa-solid fa-people-group" aria-hidden="true"></i></span><p class="stat-label">Parents</p><p class="stat-value"><%= data.totalParents %></p></article>
-      <article class="stat-card"><span class="stat-icon violet"><i class="fa-solid fa-users" aria-hidden="true"></i></span><p class="stat-label">Users</p><p class="stat-value"><%= data.totalUsers %></p></article>
-      <article class="stat-card"><span class="stat-icon emerald"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span><p class="stat-label">Fees Collected</p><p class="stat-value"><%= Number(data.totalFeesCollected).toFixed(2) %></p></article>
-      <article class="stat-card"><span class="stat-icon rose"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></span><p class="stat-label">Fees Pending</p><p class="stat-value"><%= Number(data.totalFeesPending).toFixed(2) %></p></article>
+    <section class="kpi-grid" aria-label="School overview">
+      <article class="kpi-card"><div class="kpi-top"><span>Total Students</span><span class="kpi-icon"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i></span></div><p class="kpi-value"><%= Number(data.totalStudents || 0).toLocaleString() %></p><p class="kpi-note">Currently enrolled</p></article>
+      <article class="kpi-card"><div class="kpi-top"><span>Fees Collected</span><span class="kpi-icon"><i class="fa-solid fa-coins" aria-hidden="true"></i></span></div><p class="kpi-value">KES <%= Number(data.totalFeesCollected || 0).toLocaleString() %></p><p class="kpi-note"><%= selectedTerm || 'All terms' %> · <span id="feesCollectedTrend">recorded total</span></p></article>
+      <article class="kpi-card"><div class="kpi-top"><span>Fees Balance</span><span class="kpi-icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span></div><p class="kpi-value">KES <%= Number(data.totalFeesPending || 0).toLocaleString() %></p><p class="kpi-note">Outstanding · <span id="feesBalanceTrend"><%= selectedTerm || 'all terms' %></span></p></article>
+      <article class="kpi-card"><div class="kpi-top"><span>Attendance Today</span><span class="kpi-icon"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span></div><p class="kpi-value"><%= Number(data.attendanceToday?.percentage || 0) %>%</p><p class="kpi-note"><%= data.attendanceToday?.present || 0 %> present or late of <%= data.attendanceToday?.recorded || 0 %> marked · <span><%= data.attendanceToday?.changePoints == null ? 'today' : `${data.attendanceToday.changePoints > 0 ? '+' : ''}${data.attendanceToday.changePoints} pp vs previous marked day` %></span></p></article>
     </section>
 
-    <section class="panel dashboard-panel">
-      <div class="panel-heading"><h2>Administration</h2></div>
-      <div class="action-links">
-        <a class="button" href="/students"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i>Manage Students</a>
-        <a class="button" href="/users"><i class="fa-solid fa-users" aria-hidden="true"></i>Manage Users</a>
-        <a class="button" href="/debug"><i class="fa-solid fa-database" aria-hidden="true"></i>Debug Schema</a>
-      </div>
-    </section>
-
-    <section class="overview-grid">
+    <section class="dashboard-grid">
       <article class="panel dashboard-panel">
-        <div class="panel-heading"><h2>Recent Students</h2><a href="/students">View all</a></div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Name</th><th>Admission No.</th><th>Class</th></tr></thead>
-            <tbody>
-              <% if (data.recentStudents && data.recentStudents.length) { %>
-                <% data.recentStudents.forEach(student => { %><tr><td><%= student.name %></td><td><%= student.admissionNo %></td><td><%= student.class || '—' %></td></tr><% }); %>
-              <% } else { %>
-                <tr><td colspan="3">No student records yet.</td></tr>
-              <% } %>
-            </tbody>
-          </table>
+        <h2>Fee Collection</h2>
+        <p class="panel-note">Collected totals by fee term. Payment dates are not stored separately yet.</p>
+        <div class="chart-container"><canvas id="feeCollectionChart" aria-label="Fee collection totals by term"></canvas></div>
+      </article>
+      <article class="panel dashboard-panel">
+        <h2>Recent Payments</h2>
+        <p class="panel-note">Paid-to-date amounts on recent fee accounts, not individual transactions.</p>
+        <% if (data.recentPayments?.length) { %>
+          <div class="table-wrap"><table><thead><tr><th>Student</th><th>Term</th><th>Paid to date</th></tr></thead><tbody>
+            <% data.recentPayments.forEach(payment => { %><tr><td><%= payment.student_name %><br><small><%= payment.admissionNo %></small></td><td><%= payment.term %></td><td>KES <%= Number(payment.paid_amount || 0).toLocaleString() %></td></tr><% }) %>
+          </tbody></table></div>
+        <% } else { %><div class="empty-state">No payments have been recorded yet.</div><% } %>
+      </article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="panel dashboard-panel" id="defaulters">
+        <h2>Top Defaulters</h2>
+        <p class="panel-note">Students with the largest outstanding balance.</p>
+        <% if (data.topDefaulters?.length) { %>
+          <div class="table-wrap"><table><thead><tr><th>Student</th><th>Class</th><th>Balance</th><th>Action</th></tr></thead><tbody>
+            <% data.topDefaulters.forEach(student => { %><tr><td><%= student.student_name %><br><small><%= student.admissionNo %></small></td><td><%= student.class || '—' %></td><td class="balance-alert">KES <%= Number(student.balance || 0).toLocaleString() %></td><td><button class="secondary sms-button" type="button" data-student-id="<%= student.student_id %>"><i class="fa-regular fa-comment-dots" aria-hidden="true"></i>Send SMS</button></td></tr><% }) %>
+          </tbody></table></div>
+        <% } else { %><div class="empty-state">No outstanding balances for this term.</div><% } %>
+      </article>
+      <article class="panel dashboard-panel">
+        <h2>Quick Actions</h2>
+        <p class="panel-note">Common school office tasks.</p>
+        <div class="quick-actions">
+          <a class="button" href="/students/add"><i class="fa-solid fa-user-plus" aria-hidden="true"></i>Add Student</a>
+          <a class="button" href="/fees#record-payment"><i class="fa-solid fa-money-bill-wave" aria-hidden="true"></i>Record Payment</a>
+          <a class="button secondary" href="#defaulters"><i class="fa-regular fa-comment-dots" aria-hidden="true"></i>Send SMS</a>
         </div>
       </article>
-      <article class="panel dashboard-panel">
-        <div class="panel-heading"><h2>Fee Overview</h2><a href="/fees">Open fees</a></div>
-        <div class="overview-total"><span>Fees collected</span><strong><%= Number(data.totalFeesCollected).toFixed(2) %></strong></div>
-        <div class="overview-total"><span>Fees pending</span><strong><%= Number(data.totalFeesPending).toFixed(2) %></strong></div>
-        <p class="overview-note">Detailed payment activity and term records are available in Fees.</p>
-      </article>
     </section>
-
-    <section class="chart-grid">
-      <div class="panel chart-card"><h2>Today's Attendance</h2><canvas id="attendanceChart"></canvas></div>
-      <div class="panel chart-card"><h2>Performance by Class</h2><canvas id="performanceChart"></canvas></div>
-      <div class="panel chart-card"><h2>Fees Collection</h2><canvas id="feesChart"></canvas></div>
-      <div class="panel chart-card"><h2>Students by Class</h2><canvas id="studentCountChart"></canvas></div>
-    </section>
-  <% } else if (user.role === 'teacher') { %>
+  <% } else if (user.role === 'parent' || user.role === 'student') { %>
     <section class="panel dashboard-panel">
-      <h2>My Classes</h2>
-      <% if (data.classes && data.classes.length) { %><ul><% data.classes.forEach(item => { %><li><%= item.name %> <%= item.stream || '' %></li><% }); %></ul><% } else { %><p>No classes assigned.</p><% } %>
-      <div class="action-links"><a class="button" href="/grades#add">Add Grade</a><a class="button" href="/attendance">Mark Today's Attendance</a></div>
+      <h2><%= user.role === 'parent' ? 'Parent Portal' : 'Student Portal' %></h2>
+      <% if (data.student) { %>
+        <p><strong><%= data.student.name %></strong> · Admission <%= data.student.admissionNo %> · <%= data.student.class || 'Class not assigned' %></p>
+        <div class="portal-summary">
+          <div class="portal-item">Fee balance<strong>KES <%= Number((data.fees || []).reduce((total, fee) => total + Number(fee.balance || 0), 0)).toLocaleString() %></strong></div>
+          <div class="portal-item">Grades available<strong><%= (data.grades || []).length %></strong></div>
+        </div>
+        <div class="portal-links"><a class="button" href="/fees">View fees</a><a class="button secondary" href="/grades">View grades</a><a class="button secondary" href="/attendance">View attendance</a></div>
+      <% } else { %><p>No student record is linked to this account. Contact the school office to link your account.</p><% } %>
     </section>
+    <% if (data.student) { %>
+      <section class="dashboard-grid">
+        <article class="panel dashboard-panel">
+          <h2>Recent Grades</h2>
+          <% if (data.grades?.length) { %><div class="table-wrap"><table><thead><tr><th>Subject</th><th>Term</th><th>Score</th><th>Level</th></tr></thead><tbody><% data.grades.forEach(grade => { %><tr><td><%= grade.subject %></td><td><%= grade.term %></td><td><%= grade.score ?? '—' %></td><td><%= grade.grade || '—' %></td></tr><% }) %></tbody></table></div><% } else { %><p class="empty-state">No grades are available for this term.</p><% } %>
+        </article>
+        <article class="panel dashboard-panel">
+          <h2>Fee Summary</h2>
+          <% if (data.fees?.length) { %><div class="table-wrap"><table><thead><tr><th>Term</th><th>Total</th><th>Paid</th><th>Balance</th></tr></thead><tbody><% data.fees.forEach(fee => { %><tr><td><%= fee.term %></td><td>KES <%= Number(fee.total_amount || 0).toLocaleString() %></td><td>KES <%= Number(fee.paid_amount || 0).toLocaleString() %></td><td class="balance-alert">KES <%= Number(fee.balance || 0).toLocaleString() %></td></tr><% }) %></tbody></table></div><% } else { %><p class="empty-state">No fee records are available for this term.</p><% } %>
+        </article>
+      </section>
+    <% } %>
   <% } else { %>
     <section class="panel dashboard-panel">
-      <h2><%= user.role === 'parent' ? 'Child Information' : 'My Information' %></h2>
-      <% if (data.student) { %><p><strong>Name:</strong> <%= data.student.name %></p><p><strong>Class:</strong> <%= data.student.class %></p><% } else { %><p>No linked student record found.</p><% } %>
-    </section>
-    <section class="panel dashboard-panel" id="grades">
-      <h2><%= user.role === 'parent' ? 'Latest Child Grades' : 'Latest Grades' %></h2>
-      <% if (data.grades && data.grades.length) { %><div class="table-wrap"><table><thead><tr><th>Subject</th><th>Term</th><th>Score</th></tr></thead><tbody><% data.grades.forEach(grade => { %><tr><td><%= grade.subject %></td><td><%= grade.term %></td><td><%= grade.score %></td></tr><% }); %></tbody></table></div><% } else { %><p>No grades available.</p><% } %>
-    </section>
-    <section class="panel dashboard-panel" id="attendance">
-      <h2><%= user.role === 'parent' ? 'Child Attendance' : 'My Attendance' %></h2>
-      <p class="attendance-score"><%= data.attendanceSummary ? data.attendanceSummary.percentage : 0 %>%</p>
-      <div class="percentage-track"><span style="width:<%= data.attendanceSummary ? data.attendanceSummary.percentage : 0 %>%"></span></div>
-      <% if (data.attendance && data.attendance.length) { %><div class="table-wrap" style="margin-top:18px"><table><thead><tr><th>Date</th><th>Status</th></tr></thead><tbody><% data.attendance.forEach(record => { %><tr><td><%= record.date %></td><td><%= record.status %></td></tr><% }); %></tbody></table></div><% } else { %><p>No attendance records available.</p><% } %>
+      <h2>My Classes</h2>
+      <% if (data.classes?.length) { %><div class="table-wrap"><table><thead><tr><th>Class</th><th>Stream</th></tr></thead><tbody><% data.classes.forEach(item => { %><tr><td><%= item.name %></td><td><%= item.stream || '—' %></td></tr><% }) %></tbody></table></div><% } else { %><p>No classes are currently assigned.</p><% } %>
+      <div class="portal-links"><a class="button" href="/attendance">Take attendance</a><a class="button" href="/grades">Enter grades</a><a class="button secondary" href="/students">View students</a></div>
     </section>
   <% } %>
 </main>
+
 <% if (user.role === 'admin') { %>
   <script>
-    const chartData = <%- JSON.stringify(chartData) %>;
-    const chartColors = ['#4F46E5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
-    Chart.defaults.color = '#CBD5E1';
-    Chart.defaults.borderColor = '#334155';
-    new Chart(document.getElementById('attendanceChart'), { type: 'doughnut', data: { labels: ['Present', 'Absent', 'Late'], datasets: [{ data: [chartData.attendanceStats.present, chartData.attendanceStats.absent, chartData.attendanceStats.late], backgroundColor: ['#10b981', '#ef4444', '#f59e0b'], borderWidth: 0 }] }, options: { plugins: { legend: { position: 'bottom' } }, maintainAspectRatio: false } });
-    new Chart(document.getElementById('performanceChart'), { type: 'bar', data: { labels: chartData.classPerformance.map(item => item.class), datasets: [{ label: 'Average score', data: chartData.classPerformance.map(item => item.avg), backgroundColor: '#4F46E5', borderRadius: 6 }] }, options: { scales: { y: { beginAtZero: true, max: 100 } }, maintainAspectRatio: false } });
-    new Chart(document.getElementById('feesChart'), { type: 'line', data: { labels: chartData.feesMonthly.map(item => item.month), datasets: [{ label: 'Collected', data: chartData.feesMonthly.map(item => item.total), borderColor: '#10b981', backgroundColor: '#10b98122', fill: true, tension: .35 }] }, options: { scales: { y: { beginAtZero: true } }, maintainAspectRatio: false } });
-    new Chart(document.getElementById('studentCountChart'), { type: 'bar', data: { labels: chartData.studentCounts.map(item => item.class), datasets: [{ label: 'Students', data: chartData.studentCounts.map(item => item.count), backgroundColor: chartColors, borderRadius: 6 }] }, options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: false } });
+    const feeCollection = <%- JSON.stringify(chartData.feesByTerm || []).replace(/</g, '\\u003c') %>;
+    const selectedTerm = <%- JSON.stringify(selectedTerm || '').replace(/</g, '\\u003c') %>;
+    const selectedIndex = feeCollection.findIndex(item => item.term === selectedTerm);
+    const comparison = selectedIndex >= 0 ? feeCollection[selectedIndex + 1] : null;
+    if (comparison) {
+      const current = feeCollection[selectedIndex];
+      document.getElementById("feesCollectedTrend").textContent = comparison.collected > 0
+        ? `${(((current.collected - comparison.collected) / comparison.collected) * 100).toFixed(1)}% vs previous term`
+        : "no previous-term baseline";
+      document.getElementById("feesBalanceTrend").textContent = comparison.balance > 0
+        ? `${(((current.balance - comparison.balance) / comparison.balance) * 100).toFixed(1)}% vs previous term`
+        : "no previous-term baseline";
+    } else {
+      document.getElementById("feesCollectedTrend").textContent = "no previous-term comparison";
+      document.getElementById("feesBalanceTrend").textContent = "no previous-term comparison";
+    }
+    new Chart(document.getElementById("feeCollectionChart"), {
+      type: "bar",
+      data: {
+        labels: feeCollection.map(item => item.term),
+        datasets: [
+          { label: "Collected (KES)", data: feeCollection.map(item => item.collected), backgroundColor: "#16A34A", borderRadius: 6 },
+          { label: "Balance (KES)", data: feeCollection.map(item => item.balance), backgroundColor: "#F97316", borderRadius: 6 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { callback: value => "KES " + Number(value).toLocaleString() } } },
+        plugins: { legend: { position: "bottom" } }
+      }
+    });
+    document.querySelectorAll(".sms-button").forEach(button => {
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          const response = await fetch("/api/sms/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ studentId: button.dataset.studentId })
+          });
+          const result = await response.json();
+          alert(result.message || "SMS service is not configured.");
+        } catch (error) {
+          alert("Could not contact the SMS service. Please try again.");
+        } finally {
+          button.disabled = false;
+        }
+      });
+    });
   </script>
 <% } %>
 <%- include('_footer') %>

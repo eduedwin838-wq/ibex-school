@@ -1,9 +1,13 @@
-<%- include('_header', { user }) %>
+<%- include('_header', { user, termOptions, selectedTerm }) %>
 <style>
-  .grade-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .grade-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: end; }
   .grade-form button { align-self: end; }
-  .badge { display: inline-flex; padding: 5px 10px; border-radius: 999px; background: #24234B; color: #C7D2FE; font-size: 12px; font-weight: 700; text-transform: capitalize; }
-  @media (max-width: 600px) { .grade-form { grid-template-columns: 1fr; } }
+  .grade-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .grade-actions h1 { margin: 0; }
+  .badge { display: inline-flex; padding: 5px 10px; border-radius: 999px; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 700; }
+  .grade-note { margin: -4px 0 16px; color: #64748b; font-size: 11px; }
+  @media (max-width: 760px) { .grade-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .grade-form { grid-template-columns: 1fr; } }
 </style>
 <main>
   <% if (['admin','teacher'].includes(user.role)) { %>
@@ -11,20 +15,35 @@
       <h1>Add Grade</h1>
       <form class="grade-form" method="POST" action="/grades/add">
         <label>Student<select name="studentId" required><option value="">Select student</option><% students.forEach(student => { %><option value="<%= student.id %>" <%= String(selectedStudentId) === String(student.id) ? 'selected' : '' %>><%= student.name %> (<%= student.admissionNo %>)</option><% }) %></select></label>
-        <label>Subject<input name="subject" placeholder="Subject" required></label>
-        <label>Term<input name="term" placeholder="Term" required></label>
-        <label>Score<input name="score" type="number" min="0" max="100" placeholder="Score" required></label>
+        <label>Subject<input name="subject" maxlength="50" placeholder="Subject" required></label>
+        <label>Term<input name="term" maxlength="20" placeholder="Term, e.g. Term 1 2026" required></label>
+        <label>Numeric score (optional)<input name="score" type="number" min="0" max="100" placeholder="0-100"></label>
+        <label>CBC level
+          <select name="grade">
+            <option value="">Choose if not entering a score</option>
+            <option value="EE">EE — Exceeding Expectations</option>
+            <option value="ME">ME — Meeting Expectations</option>
+            <option value="AE">AE — Approaching Expectations</option>
+            <option value="BE">BE — Below Expectations</option>
+          </select>
+        </label>
         <button type="submit">Save Grade</button>
       </form>
+      <p class="grade-note">Enter a numeric score, a CBC level, or both. CBC-only grades do not affect numeric averages.</p>
     </section>
   <% } %>
-  <section class="panel">
-    <h1><%= user.role === 'student' ? 'My Grades' : user.role === 'parent' ? 'Child Grades' : 'Grades' %></h1>
+  <section class="panel" id="report-card">
+    <div class="grade-actions">
+      <h1><%= user.role === 'student' ? 'My Grades' : user.role === 'parent' ? 'Child Grades' : 'Grades &amp; Exams' %></h1>
+      <button type="button" class="secondary" onclick="window.print()"><i class="fa-solid fa-print" aria-hidden="true"></i>Print Report Card</button>
+    </div>
     <% if (grades.length) { %>
-      <div class="table-wrap"><table><thead><tr><th>Student</th><th>Subject</th><th>Term</th><th>Score</th></tr></thead><tbody>
-        <% grades.forEach(grade => { %><tr><td><%= grade.student_name %></td><td><%= grade.subject %></td><td><%= grade.term %></td><td><%= grade.score %></td></tr><% }) %>
+      <div class="table-wrap"><table><thead><tr><th>Student</th><th>Subject</th><th>Term</th><th>Score</th><th>CBC / Grade</th></tr></thead><tbody>
+        <% grades.forEach(grade => { const displayedGrade = grade.grade || (grade.score == null ? '—' : grade.score >= 80 ? 'A' : grade.score >= 70 ? 'B' : grade.score >= 60 ? 'C' : grade.score >= 50 ? 'D' : 'F'); %>
+          <tr><td><%= grade.student_name %></td><td><%= grade.subject %></td><td><%= grade.term %></td><td><%= grade.score ?? '—' %></td><td><span class="badge"><%= displayedGrade %></span></td></tr>
+        <% }) %>
       </tbody></table></div>
-    <% } else { %><p>No grades found.</p><% } %>
+    <% } else { %><p>No grades found for this term.</p><% } %>
   </section>
 </main>
 <%- include('_footer') %>

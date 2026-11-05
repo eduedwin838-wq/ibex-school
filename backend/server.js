@@ -33,6 +33,31 @@ const query = (sql, values = []) =>
     );
   });
 
+const getClassOptions = async () => {
+  const classes = await query(
+    "SELECT name, stream FROM classes ORDER BY name, stream",
+  );
+  return classes.map(({ name, stream }) => ({
+    value: stream ? `${name} - ${stream}` : name,
+    name,
+    stream,
+  }));
+};
+
+const getTermOptions = async () => {
+  const rows = await query(
+    "SELECT term FROM fees WHERE term IS NOT NULL AND term <> '' UNION SELECT term FROM grades WHERE term IS NOT NULL AND term <> '' ORDER BY term",
+  );
+  return rows.map((row) => row.term);
+};
+
+const getFeeTermOptions = async () => {
+  const rows = await query(
+    "SELECT term FROM fees WHERE term IS NOT NULL AND term <> '' GROUP BY term ORDER BY MAX(created_at) DESC",
+  );
+  return rows.map((row) => row.term);
+};
+
 const isAuthenticated = (req, res, next) => {
   if (!req.session.user) return res.redirect("/login");
   next();
@@ -76,6 +101,11 @@ const gradeLabel = (mean) => {
   return "F";
 };
 
+const isValidDate = (value) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+  !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) &&
+  new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+
 const escapePdfText = (value) =>
   String(value ?? "")
     .replace(/\\/g, "\\\\")
@@ -118,44 +148,55 @@ const getStudentReport = async (studentId) => {
   );
   if (!students.length) return null;
   const grades = await query(
-    "SELECT subject, term, score FROM grades WHERE student_id = ? ORDER BY subject, term",
+    "SELECT subject, term, score, grade FROM grades WHERE student_id = ? ORDER BY subject, term",
     [studentId],
   );
   const meanRows = await query(
     "SELECT AVG(score) AS mean FROM grades WHERE student_id = ? AND score IS NOT NULL",
     [studentId],
   );
+  const hasNumericGrades = meanRows[0].mean !== null;
   const mean = Number(meanRows[0].mean) || 0;
   return {
     student: students[0],
     grades,
     mean: Math.round(mean * 100) / 100,
-    grade: gradeLabel(mean),
+    grade: hasNumericGrades ? gradeLabel(mean) : "—",
     term: grades.find((grade) => grade.term)?.term || "All Terms",
     attendance: await getAttendanceSummary(studentId),
   };
 };
 
-const getAdminDashboardData = async () => {
+const getAdminDashboardData = async (selectedTerm) => {
+  const hasSelectedTerm = Boolean(selectedTerm);
+  const feeFilter = hasSelectedTerm ? " WHERE term = ?" : "";
+  const filterValues = hasSelectedTerm ? [selectedTerm] : [];
   const [
     feesSummary,
     attendanceRows,
+    previousAttendanceRows,
     performanceRows,
     feesMonthly,
     classRows,
     recentStudents,
+    recentPayments,
+    topDefaulters,
   ] = await Promise.all([
       query(
-        "SELECT COALESCE(SUM(paid_amount), 0) AS collected, COALESCE(SUM(balance), 0) AS pending FROM fees",
+        `SELECT COALESCE(SUM(paid_amount), 0) AS collected, COALESCE(SUM(balance), 0) AS pending FROM fees${feeFilter}`,
+        filterValues,
       ),
       query(
         "SELECT status, COUNT(*) AS count FROM attendance WHERE date = CURDATE() GROUP BY status",
       ),
       query(
+        "SELECT status, COUNT(*) AS count FROM attendance WHERE date = (SELECT MAX(date) FROM attendance WHERE date < CURDATE()) GROUP BY status",
+      ),
+      query(
         "SELECT students.class AS class, ROUND(AVG(grades.score), 2) AS avg FROM grades JOIN students ON students.id = grades.student_id WHERE students.class IS NOT NULL AND students.class <> '' GROUP BY students.class ORDER BY students.class",
       ),
       query(
-        "SELECT DATE_FORMAT(created_at, '%b') AS month, SUM(paid_amount) AS total FROM fees WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH) GROUP BY YEAR(created_at), MONTH(created_at), DATE_FORMAT(created_at, '%b') ORDER BY YEAR(created_at), MONTH(created_at)",
+        "SELECT term, COALESCE(SUM(paid_amount), 0) AS collected, COALESCE(SUM(balance), 0) AS balance FROM fees GROUP BY term ORDER BY MAX(created_at) DESC",
       ),
       query(
         "SELECT class, COUNT(*) AS count FROM students WHERE class IS NOT NULL AND class <> '' GROUP BY class ORDER BY class",
@@ -163,25 +204,73 @@ const getAdminDashboardData = async () => {
       query(
         "SELECT id, name, admissionNo, class FROM students ORDER BY id DESC LIMIT 5",
       ),
+      query(
+        `SELECT fees.id, fees.student_id, fees.term, fees.total_amount, fees.paid_amount, fees.balance, fees.created_at, students.name AS student_name, students.admissionNo FROM fees JOIN students ON students.id = fees.student_id WHERE fees.paid_amount > 0${hasSelectedTerm ? " AND fees.term = ?" : ""} ORDER BY fees.created_at DESC LIMIT 6`,
+        filterValues,
+      ),
+      query(
+        `SELECT fees.student_id, fees.term, fees.balance, students.name AS student_name, students.admissionNo, students.class FROM fees JOIN students ON students.id = fees.student_id WHERE fees.balance > 0${hasSelectedTerm ? " AND fees.term = ?" : ""} ORDER BY fees.balance DESC LIMIT 5`,
+        filterValues,
+      ),
     ]);
 
   const attendanceStats = { present: 0, absent: 0, late: 0 };
   attendanceRows.forEach((row) => {
     attendanceStats[row.status] = Number(row.count);
   });
+  const attendanceRecorded = Object.values(attendanceStats).reduce(
+    (total, count) => total + count,
+    0,
+  );
+  const attendancePresent = attendanceStats.present + attendanceStats.late;
+  const previousAttendanceStats = { present: 0, absent: 0, late: 0 };
+  previousAttendanceRows.forEach((row) => {
+    previousAttendanceStats[row.status] = Number(row.count);
+  });
+  const previousAttendanceRecorded = Object.values(
+    previousAttendanceStats,
+  ).reduce((total, count) => total + count, 0);
+  const previousAttendancePercentage = previousAttendanceRecorded
+    ? Math.round(
+        ((previousAttendanceStats.present + previousAttendanceStats.late) /
+          previousAttendanceRecorded) *
+          100,
+      )
+    : null;
+  const attendanceToday = {
+    recorded: attendanceRecorded,
+    present: attendancePresent,
+    percentage: attendanceRecorded
+      ? Math.round((attendancePresent / attendanceRecorded) * 100)
+      : 0,
+    changePoints:
+      previousAttendancePercentage === null
+        ? null
+        : (attendanceRecorded
+            ? Math.round((attendancePresent / attendanceRecorded) * 100)
+            : 0) - previousAttendancePercentage,
+  };
   return {
     totalFeesCollected: Number(feesSummary[0].collected) || 0,
     totalFeesPending: Number(feesSummary[0].pending) || 0,
+    attendanceToday,
+    recentPayments,
+    topDefaulters,
     recentStudents,
     chartData: {
-      attendanceStats,
+    attendanceStats,
       classPerformance: performanceRows.map((row) => ({
         class: row.class,
         avg: Number(row.avg) || 0,
       })),
       feesMonthly: feesMonthly.map((row) => ({
-        month: row.month,
-        total: Number(row.total) || 0,
+        month: row.term,
+        total: Number(row.collected) || 0,
+      })),
+      feesByTerm: feesMonthly.map((row) => ({
+        term: row.term,
+        collected: Number(row.collected) || 0,
+        balance: Number(row.balance) || 0,
       })),
       studentCounts: classRows.map((row) => ({
         class: row.class,
@@ -288,6 +377,9 @@ const initializeSchema = async () => {
     await query("ALTER TABLE teachers ADD COLUMN tscNo VARCHAR(50) NULL");
   }
 
+  await query(
+    "CREATE TABLE IF NOT EXISTS classes (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(50), stream VARCHAR(50), teacherName VARCHAR(100))",
+  );
   await query(
     "CREATE TABLE IF NOT EXISTS attendance (id INT AUTO_INCREMENT PRIMARY KEY, student_id INT NOT NULL, date DATE NOT NULL, status ENUM('present','absent','late') NOT NULL, marked_by INT NULL, UNIQUE KEY uq_attendance_student_date (student_id, date))",
   );
@@ -483,7 +575,12 @@ app.get("/dashboard", isAuthenticated, async (req, res) => {
     totalUsers: 0,
     totalFeesCollected: 0,
     totalFeesPending: 0,
+    attendanceToday: { recorded: 0, present: 0, percentage: 0 },
+    recentPayments: [],
+    topDefaulters: [],
   };
+  let termOptions = [];
+  let selectedTerm = "";
   let chartData = {
     attendanceStats: { present: 0, absent: 0, late: 0 },
     classPerformance: [],
@@ -492,6 +589,13 @@ app.get("/dashboard", isAuthenticated, async (req, res) => {
   };
   try {
     if (user.role === "admin") {
+      termOptions = await getFeeTermOptions();
+      const requestedTerm = String(req.query.term || "");
+      selectedTerm = termOptions.includes(requestedTerm)
+        ? requestedTerm
+        : Object.prototype.hasOwnProperty.call(req.query, "term")
+          ? ""
+          : termOptions[0] || "";
       const counts = await Promise.all([
         query("SELECT COUNT(*) AS count FROM students"),
         query("SELECT COUNT(*) AS count FROM teachers"),
@@ -504,20 +608,38 @@ app.get("/dashboard", isAuthenticated, async (req, res) => {
         data.totalParents,
         data.totalUsers,
       ] = counts.map((result) => result[0].count);
-      const adminData = await getAdminDashboardData();
+      const adminData = await getAdminDashboardData(selectedTerm);
       data.totalFeesCollected = adminData.totalFeesCollected;
       data.totalFeesPending = adminData.totalFeesPending;
+      data.attendanceToday = adminData.attendanceToday;
+      data.recentPayments = adminData.recentPayments;
+      data.topDefaulters = adminData.topDefaulters;
       chartData = adminData.chartData;
     } else if (user.role === "parent" || user.role === "student") {
       if (user.linked_id) {
+        const studentTermRows = await query(
+          "SELECT term FROM fees WHERE student_id = ? AND term IS NOT NULL AND term <> '' UNION SELECT term FROM grades WHERE student_id = ? AND term IS NOT NULL AND term <> '' ORDER BY term",
+          [user.linked_id, user.linked_id],
+        );
+        termOptions = studentTermRows.map((row) => row.term);
+        const requestedTerm = String(req.query.term || "");
+        selectedTerm = termOptions.includes(requestedTerm)
+          ? requestedTerm
+          : Object.prototype.hasOwnProperty.call(req.query, "term")
+            ? ""
+            : termOptions[0] || "";
         const studentRows = await query(
           "SELECT * FROM students WHERE id = ? LIMIT 1",
           [user.linked_id],
         );
         data.student = studentRows[0];
         data.grades = await query(
-          "SELECT * FROM grades WHERE student_id = ? ORDER BY term DESC, subject LIMIT 5",
-          [user.linked_id],
+          "SELECT * FROM grades WHERE student_id = ? AND (? = '' OR term = ?) ORDER BY term DESC, subject LIMIT 5",
+          [user.linked_id, selectedTerm, selectedTerm],
+        );
+        data.fees = await query(
+          "SELECT term, total_amount, paid_amount, balance FROM fees WHERE student_id = ? AND (? = '' OR term = ?) ORDER BY created_at DESC",
+          [user.linked_id, selectedTerm, selectedTerm],
         );
         data.attendance = await query(
           "SELECT * FROM attendance WHERE student_id = ? ORDER BY date DESC",
@@ -526,15 +648,26 @@ app.get("/dashboard", isAuthenticated, async (req, res) => {
         data.attendanceSummary = await getAttendanceSummary(user.linked_id);
       }
     } else if (user.role === "teacher") {
+      termOptions = await getTermOptions();
+      selectedTerm = termOptions.includes(String(req.query.term || ""))
+        ? String(req.query.term)
+        : termOptions[0] || "";
       data.classes = await query(
         "SELECT * FROM classes WHERE teacherName = ?",
         [user.name],
       );
     }
   } catch (error) {
-    console.log("Dashboard query error:", error.message);
+    console.error("Dashboard query error:", error);
+    return res.status(500).send("Could not load dashboard.");
   }
-  res.render("dashboard", { user, data, chartData });
+  res.render("dashboard", {
+    user,
+    data,
+    chartData,
+    termOptions,
+    selectedTerm,
+  });
 });
 
 app.get("/grades", isAuthenticated, async (req, res) => {
@@ -542,13 +675,19 @@ app.get("/grades", isAuthenticated, async (req, res) => {
     const user = req.session.user;
     const canManage = ["admin", "teacher"].includes(user.role);
     const studentId = canManage ? req.query.studentId : user.linked_id;
+    const termOptions = await getTermOptions();
+    const requestedTerm = String(req.query.term || "");
+    const selectedTerm = termOptions.includes(requestedTerm)
+      ? requestedTerm
+      : "";
     const grades = studentId
       ? await query(
-          "SELECT grades.*, students.name AS student_name FROM grades JOIN students ON students.id = grades.student_id WHERE grades.student_id = ? ORDER BY grades.term DESC, grades.subject",
-          [studentId],
+          "SELECT grades.*, students.name AS student_name FROM grades JOIN students ON students.id = grades.student_id WHERE grades.student_id = ? AND (? = '' OR grades.term = ?) ORDER BY grades.term DESC, grades.subject",
+          [studentId, selectedTerm, selectedTerm],
         )
       : await query(
-          "SELECT grades.*, students.name AS student_name FROM grades JOIN students ON students.id = grades.student_id ORDER BY students.name, grades.term DESC, grades.subject",
+          "SELECT grades.*, students.name AS student_name FROM grades JOIN students ON students.id = grades.student_id WHERE (? = '' OR grades.term = ?) ORDER BY students.name, grades.term DESC, grades.subject",
+          [selectedTerm, selectedTerm],
         );
     const students = canManage
       ? await query("SELECT id, name, admissionNo FROM students ORDER BY name")
@@ -558,6 +697,8 @@ app.get("/grades", isAuthenticated, async (req, res) => {
       grades,
       students,
       selectedStudentId: studentId || "",
+      termOptions,
+      selectedTerm,
     });
   } catch (error) {
     console.log("Grades query error:", error.message);
@@ -570,32 +711,149 @@ app.post(
   isAuthenticated,
   authorizeRoles(["admin", "teacher"]),
   async (req, res) => {
-    const { studentId, subject, term, score } = req.body;
-    const numericScore = Number(score);
+    const { studentId, subject, term, score, grade } = req.body;
+    const hasScore = String(score ?? "").trim() !== "";
+    const numericScore = hasScore ? Number(score) : null;
+    const cbcGrades = ["EE", "ME", "AE", "BE"];
     if (
       !studentId ||
       !subject ||
       !term ||
-      !Number.isFinite(numericScore) ||
-      numericScore < 0 ||
-      numericScore > 100
+      (!hasScore && !cbcGrades.includes(grade)) ||
+      (hasScore &&
+        (!Number.isFinite(numericScore) ||
+          numericScore < 0 ||
+          numericScore > 100)) ||
+      (grade && !cbcGrades.includes(grade))
     ) {
       return res
         .status(400)
         .send(
-          "Student, subject, term, and a score from 0 to 100 are required.",
+          "Student, subject, term, and either a score from 0 to 100 or a valid CBC level are required.",
         );
     }
     try {
       await query(
-        "INSERT INTO grades (student_id, subject, term, score) VALUES (?, ?, ?, ?)",
-        [studentId, subject, term, numericScore],
+        "INSERT INTO grades (student_id, subject, term, score, grade) VALUES (?, ?, ?, ?, ?)",
+        [
+          studentId,
+          subject,
+          term,
+          numericScore,
+          grade || (hasScore ? gradeLabel(numericScore) : null),
+        ],
       );
       res.redirect(`/grades?studentId=${encodeURIComponent(studentId)}`);
     } catch (error) {
       console.error(error);
       console.log("Grade insert error:", error.message);
       res.status(500).send("Could not add grade.");
+    }
+  },
+);
+
+app.get(
+  "/classes",
+  isAuthenticated,
+  authorizeRoles(["admin"]),
+  async (req, res) => {
+    try {
+      const [classes, teachers] = await Promise.all([
+        query(
+          "SELECT classes.id, classes.name, classes.stream, classes.teacherName, (SELECT COUNT(*) FROM students WHERE students.class = CASE WHEN classes.stream IS NULL OR classes.stream = '' THEN classes.name ELSE CONCAT(classes.name, ' - ', classes.stream) END) AS studentCount FROM classes ORDER BY classes.name, classes.stream",
+        ),
+        query("SELECT id, name, subject FROM teachers ORDER BY name"),
+      ]);
+      res.render("classes", {
+        user: req.session.user,
+        classes,
+        teachers,
+        created: req.query.created === "1",
+      });
+    } catch (error) {
+      console.log("Classes query error:", error.message);
+      res.status(500).send("Could not load classes.");
+    }
+  },
+);
+
+app.post(
+  "/classes",
+  isAuthenticated,
+  authorizeRoles(["admin"]),
+  async (req, res) => {
+    const name = String(req.body.name || "").trim();
+    const stream = String(req.body.stream || "").trim();
+    const teacherId = String(req.body.teacherId || "").trim();
+    if (!name || name.length > 50 || stream.length > 50) {
+      return res
+        .status(400)
+        .send("A class name of up to 50 characters is required.");
+    }
+    if (teacherId && !/^\d+$/.test(teacherId)) {
+      return res.status(400).send("Select a valid class teacher.");
+    }
+    try {
+      const duplicate = await query(
+        "SELECT id FROM classes WHERE name = ? AND COALESCE(stream, '') = ? LIMIT 1",
+        [name, stream],
+      );
+      if (duplicate.length) {
+        return res.status(409).send("That class and stream already exist.");
+      }
+
+      let teacherName = null;
+      if (teacherId) {
+        const teachers = await query(
+          "SELECT name FROM teachers WHERE id = ? LIMIT 1",
+          [teacherId],
+        );
+        if (!teachers.length) {
+          return res.status(400).send("The selected class teacher was not found.");
+        }
+        teacherName = teachers[0].name;
+      }
+
+      await query(
+        "INSERT INTO classes (name, stream, teacherName) VALUES (?, ?, ?)",
+        [name, stream || null, teacherName],
+      );
+      res.redirect("/classes?created=1");
+    } catch (error) {
+      console.log("Class creation error:", error.message);
+      res.status(500).send("Could not create class.");
+    }
+  },
+);
+
+app.post(
+  "/classes/delete/:id",
+  isAuthenticated,
+  authorizeRoles(["admin"]),
+  async (req, res) => {
+    try {
+      const classes = await query(
+        "SELECT name, stream FROM classes WHERE id = ? LIMIT 1",
+        [req.params.id],
+      );
+      if (!classes.length) return res.redirect("/classes");
+      const classValue = classes[0].stream
+        ? `${classes[0].name} - ${classes[0].stream}`
+        : classes[0].name;
+      const enrolled = await query(
+        "SELECT COUNT(*) AS count FROM students WHERE class = ?",
+        [classValue],
+      );
+      if (Number(enrolled[0].count) > 0) {
+        return res
+          .status(409)
+          .send("Reassign enrolled students before deleting this class.");
+      }
+      await query("DELETE FROM classes WHERE id = ?", [req.params.id]);
+      res.redirect("/classes");
+    } catch (error) {
+      console.log("Class deletion error:", error.message);
+      res.status(500).send("Could not delete class.");
     }
   },
 );
@@ -621,13 +879,33 @@ app.get("/attendance", isAuthenticated, async (req, res) => {
       });
     }
 
-    const today = new Date().toISOString().slice(0, 10);
-    const students = await query(
-      "SELECT id, name, admissionNo, class FROM students ORDER BY name",
-    );
-    const records = await query("SELECT * FROM attendance WHERE date = ?", [
-      today,
+    const [dateRows, availableClasses] = await Promise.all([
+      query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS today"),
+      query(
+        "SELECT DISTINCT class FROM students WHERE class IS NOT NULL AND class <> '' ORDER BY class",
+      ),
     ]);
+    const today = dateRows[0].today;
+    const date = String(req.query.date || today).trim();
+    const selectedClass = String(req.query.class || "").trim();
+    if (!isValidDate(date)) {
+      return res.status(400).send("Choose a valid attendance date.");
+    }
+    const students = await query(
+      `SELECT id, name, admissionNo, class FROM students ${
+        selectedClass ? "WHERE class = ?" : ""
+      } ORDER BY class, name`,
+      selectedClass ? [selectedClass] : [],
+    );
+    const studentIds = students.map((student) => student.id);
+    const records = studentIds.length
+      ? await query(
+          `SELECT student_id, status FROM attendance WHERE date = ? AND student_id IN (${studentIds
+            .map(() => "?")
+            .join(", ")})`,
+          [date, ...studentIds],
+        )
+      : [];
     const recordByStudent = Object.fromEntries(
       records.map((record) => [record.student_id, record.status]),
     );
@@ -637,6 +915,9 @@ app.get("/attendance", isAuthenticated, async (req, res) => {
       students,
       recordByStudent,
       today,
+      date,
+      availableClasses,
+      selectedClass,
     });
   } catch (error) {
     console.log("Attendance query error:", error.message);
@@ -650,17 +931,46 @@ app.post(
   authorizeRoles(["admin", "teacher"]),
   async (req, res) => {
     const statuses = req.body.status || {};
-    const date = req.body.date || new Date().toISOString().slice(0, 10);
+    const date = String(req.body.date || "").trim();
+    const selectedClass = String(req.body.class || "").trim();
     const validStatuses = ["present", "absent", "late"];
+    if (!isValidDate(date)) {
+      return res.status(400).send("Choose a valid attendance date.");
+    }
+    if (
+      !statuses ||
+      typeof statuses !== "object" ||
+      Array.isArray(statuses) ||
+      Object.keys(statuses).length === 0 ||
+      Object.entries(statuses).some(
+        ([studentId, status]) =>
+          !/^\d+$/.test(studentId) || !validStatuses.includes(status),
+      )
+    ) {
+      return res.status(400).send("Select a valid attendance status for students.");
+    }
     try {
+      const studentIds = Object.keys(statuses);
+      const validStudents = await query(
+        `SELECT id FROM students WHERE id IN (${studentIds
+          .map(() => "?")
+          .join(", ")})${selectedClass ? " AND class = ?" : ""}`,
+        selectedClass ? [...studentIds, selectedClass] : studentIds,
+      );
+      if (validStudents.length !== studentIds.length) {
+        return res
+          .status(400)
+          .send("Attendance includes a student outside the selected class.");
+      }
       for (const [studentId, status] of Object.entries(statuses)) {
-        if (!validStatuses.includes(status)) continue;
         await query(
           "INSERT INTO attendance (student_id, date, status, marked_by) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE status = VALUES(status), marked_by = VALUES(marked_by)",
           [studentId, date, status, req.session.user.id],
         );
       }
-      res.redirect("/attendance");
+      const params = new URLSearchParams({ date });
+      if (selectedClass) params.set("class", selectedClass);
+      res.redirect(`/attendance?${params.toString()}`);
     } catch (error) {
       console.log("Attendance insert error:", error.message);
       res.status(500).send("Could not save attendance.");
@@ -693,10 +1003,13 @@ app.get("/reports", isAuthenticated, async (req, res) => {
         `Grade: ${report.grade}`,
         `Attendance: ${report.attendance.percentage}%`,
         "",
-        "Subject | Term | Score",
+        "Subject | Term | Score | Grade",
         ...report.grades.map(
-          (grade) =>
-            `${grade.subject || ""} | ${grade.term || ""} | ${grade.score ?? ""}`,
+          (grade) => {
+            const letterGrade = grade.grade
+              || (grade.score == null ? "—" : gradeLabel(Number(grade.score)));
+            return `${grade.subject || ""} | ${grade.term || ""} | ${grade.score ?? ""} | ${letterGrade}`;
+          },
         ),
       ];
       res.setHeader(
@@ -723,14 +1036,20 @@ app.get("/fees", isAuthenticated, async (req, res) => {
   try {
     const user = req.session.user;
     const canManage = ["admin", "teacher"].includes(user.role);
+    const termOptions = await getTermOptions();
+    const requestedTerm = String(req.query.term || "");
+    const selectedTerm = termOptions.includes(requestedTerm)
+      ? requestedTerm
+      : "";
     const fees = canManage
       ? await query(
-          "SELECT fees.*, students.name AS student_name, students.admissionNo FROM fees JOIN students ON students.id = fees.student_id ORDER BY fees.created_at DESC, students.name",
+          "SELECT fees.*, students.name AS student_name, students.admissionNo, students.class AS student_class FROM fees JOIN students ON students.id = fees.student_id WHERE (? = '' OR fees.term = ?) ORDER BY fees.created_at DESC, students.name",
+          [selectedTerm, selectedTerm],
         )
       : user.linked_id
         ? await query(
-            "SELECT fees.*, students.name AS student_name, students.admissionNo FROM fees JOIN students ON students.id = fees.student_id WHERE fees.student_id = ? ORDER BY fees.created_at DESC",
-            [user.linked_id],
+            "SELECT fees.*, students.name AS student_name, students.admissionNo, students.class AS student_class FROM fees JOIN students ON students.id = fees.student_id WHERE fees.student_id = ? AND (? = '' OR fees.term = ?) ORDER BY fees.created_at DESC",
+            [user.linked_id, selectedTerm, selectedTerm],
           )
         : [];
     const students =
@@ -744,12 +1063,81 @@ app.get("/fees", isAuthenticated, async (req, res) => {
       fees,
       students,
       canManage: user.role === "admin",
+      termOptions,
+      selectedTerm,
     });
   } catch (error) {
     console.log("Fees query error:", error.message);
     res.status(500).send("Could not load fees.");
   }
 });
+
+app.post("/api/mpesa/stkpush", isAuthenticated, async (req, res) => {
+  const user = req.session.user;
+  const feeId = String(req.body.feeId || "");
+  const amount = Number(req.body.amount);
+  const phone = String(req.body.phone || "").replace(/[\s+()-]/g, "");
+  if (!["admin", "parent", "student"].includes(user.role)) {
+    return res.status(403).json({ configured: false, message: "You cannot request a payment for this account." });
+  }
+  if (!/^\d+$/.test(feeId) || !Number.isFinite(amount) || amount <= 0 || !/^(?:0|254)\d{9}$/.test(phone)) {
+    return res.status(400).json({ configured: false, message: "A valid fee record, amount, and Kenyan phone number are required." });
+  }
+  try {
+    const rows = await query(
+      "SELECT fees.id, fees.student_id, fees.balance FROM fees WHERE fees.id = ? LIMIT 1",
+      [feeId],
+    );
+    if (!rows.length) {
+      return res.status(404).json({ configured: false, message: "Fee record not found." });
+    }
+    if (user.role !== "admin" && Number(user.linked_id) !== Number(rows[0].student_id)) {
+      return res.status(403).json({ configured: false, message: "You can only request payment for your linked student account." });
+    }
+    if (amount > Number(rows[0].balance)) {
+      return res.status(400).json({ configured: false, message: "Payment exceeds the outstanding balance." });
+    }
+    return res.status(501).json({
+      configured: false,
+      message: "Daraja STK Push is not configured. No payment request was sent.",
+    });
+  } catch (error) {
+    console.log("M-Pesa STK placeholder error:", error.message);
+    return res.status(500).json({ configured: false, message: "Could not validate this payment request." });
+  }
+});
+
+app.post(
+  "/api/sms/send",
+  isAuthenticated,
+  authorizeRoles(["admin"]),
+  async (req, res) => {
+    const studentId = String(req.body.studentId || "");
+    if (!/^\d+$/.test(studentId)) {
+      return res.status(400).json({ configured: false, message: "A valid student is required." });
+    }
+    try {
+      const students = await query(
+        "SELECT students.id, students.parentContact, COALESCE(SUM(fees.balance), 0) AS balance FROM students LEFT JOIN fees ON fees.student_id = students.id WHERE students.id = ? GROUP BY students.id, students.parentContact LIMIT 1",
+        [studentId],
+      );
+      if (!students.length) {
+        return res.status(404).json({ configured: false, message: "Student not found." });
+      }
+      if (!students[0].parentContact) {
+        return res.status(400).json({ configured: false, message: "No parent contact is on file for this student." });
+      }
+      return res.status(501).json({
+        configured: false,
+        message: "SMS delivery is not configured. No message was sent.",
+        balance: Number(students[0].balance) || 0,
+      });
+    } catch (error) {
+      console.log("SMS placeholder error:", error.message);
+      return res.status(500).json({ configured: false, message: "Could not prepare the balance message." });
+    }
+  },
+);
 
 app.post(
   "/fees/add",
@@ -784,15 +1172,26 @@ app.post(
     }
     try {
       const existing = await query(
-        "SELECT id FROM fees WHERE student_id = ? AND term = ? ORDER BY id LIMIT 1",
+        "SELECT id, balance FROM fees WHERE student_id = ? AND term = ? ORDER BY id LIMIT 1",
         [studentId, term],
       );
       if (existing.length) {
-        await query(
-          "UPDATE fees SET paid_amount = paid_amount + ?, payment_method = ?, mpesa_code = ? WHERE id = ?",
-          [amount, paymentMethod, mpesaCode || null, existing[0].id],
+        if (amount > Number(existing[0].balance)) {
+          return res.status(400).send("Payment exceeds the outstanding balance.");
+        }
+        const updateResult = await query(
+          "UPDATE fees SET paid_amount = paid_amount + ?, payment_method = ?, mpesa_code = ? WHERE id = ? AND balance >= ?",
+          [amount, paymentMethod, mpesaCode || null, existing[0].id, amount],
         );
+        if (updateResult.affectedRows !== 1) {
+          return res.status(400).send("Payment exceeds the outstanding balance.");
+        }
       } else {
+        if (amount > 15000) {
+          return res
+            .status(400)
+            .send("Payment exceeds the default term fee of 15,000.");
+        }
         await query(
           "INSERT INTO fees (student_id, term, total_amount, paid_amount, payment_method, mpesa_code) VALUES (?, ?, 15000, ?, ?, ?)",
           [studentId, term, amount, paymentMethod, mpesaCode || null],
@@ -899,13 +1298,23 @@ app.get(
   "/students/add",
   isAuthenticated,
   authorizeRoles(["admin", "teacher"]),
-  (req, res) => res.render("add_student", { user: req.session.user }),
+  async (req, res) => {
+    try {
+      res.render("add_student", {
+        user: req.session.user,
+        classOptions: await getClassOptions(),
+      });
+    } catch (error) {
+      console.log("Student form class query error:", error.message);
+      res.status(500).send("Could not load student form.");
+    }
+  },
 );
 app.get(
   "/add_student",
   isAuthenticated,
   authorizeRoles(["admin", "teacher"]),
-  (req, res) => res.render("add_student", { user: req.session.user }),
+  (req, res) => res.redirect("/students/add"),
 );
 
 // SAVE STUDENT - na columns zako sahihi
@@ -971,18 +1380,22 @@ app.get(
   "/students/edit/:id",
   isAuthenticated,
   authorizeRoles(["admin", "teacher"]),
-  (req, res) => {
-    db.query(
-      "SELECT * FROM students WHERE id =?",
-      [req.params.id],
-      (err, results) => {
-        if (err || results.length === 0) return res.redirect("/students");
-        res.render("edit_student", {
-          user: req.session.user,
-          student: results[0],
-        });
-      },
-    );
+  async (req, res) => {
+    try {
+      const [students, classOptions] = await Promise.all([
+        query("SELECT * FROM students WHERE id = ?", [req.params.id]),
+        getClassOptions(),
+      ]);
+      if (!students.length) return res.redirect("/students");
+      res.render("edit_student", {
+        user: req.session.user,
+        student: students[0],
+        classOptions,
+      });
+    } catch (error) {
+      console.log("Student edit query error:", error.message);
+      res.status(500).send("Could not load student.");
+    }
   },
 );
 

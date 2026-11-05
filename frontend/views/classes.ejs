@@ -1,0 +1,44 @@
+<%- include('_header', { user }) %>
+<style>
+  .class-form { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(140px, 1fr) minmax(200px, 1fr) auto; align-items: end; gap: 14px; }
+  .class-form button { min-height: 40px; }
+  .notice { padding: 12px 14px; border: 1px solid #c8dfd1; border-radius: 5px; background: #f1f8f3; color: #285a3b; }
+  @media (max-width: 700px) { .class-form { grid-template-columns: 1fr; } }
+</style>
+<main>
+  <section class="panel">
+    <h1>Classes</h1>
+    <% if (created) { %><p class="notice">Class created successfully.</p><% } %>
+    <form class="class-form" method="POST" action="/classes">
+      <label>Class name<input name="name" maxlength="50" placeholder="e.g. Grade 7" required></label>
+      <label>Stream<input name="stream" maxlength="50" placeholder="e.g. North"></label>
+      <label>Class teacher
+        <select name="teacherId">
+          <option value="">Not assigned</option>
+          <% teachers.forEach(teacher => { %><option value="<%= teacher.id %>"><%= teacher.name %><%= teacher.subject ? ` - ${teacher.subject}` : '' %></option><% }) %>
+        </select>
+      </label>
+      <button type="submit">Add class</button>
+    </form>
+  </section>
+  <section class="panel">
+    <h2>Class list</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Class</th><th>Stream</th><th>Class teacher</th><th>Students</th><th>Action</th></tr></thead>
+        <tbody>
+          <% if (classes.length) { %>
+            <% classes.forEach(item => { %><tr><td><%= item.name %></td><td><%= item.stream || '—' %></td><td><%= item.teacherName || 'Not assigned' %></td><td><%= item.studentCount %></td><td>
+              <% if (Number(item.studentCount) === 0) { %>
+                <form method="POST" action="/classes/delete/<%= item.id %>" onsubmit="return confirm('Delete this class?');"><button class="delete" type="submit">Delete</button></form>
+              <% } else { %>Reassign students first<% } %>
+            </td></tr><% }) %>
+          <% } else { %>
+            <tr><td colspan="5">No classes have been set up yet.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('_footer') %>

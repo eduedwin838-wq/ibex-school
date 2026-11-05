@@ -9,7 +9,13 @@
     <form method="POST" action="/students/edit/<%= student.id %>">
       <label>Name<input type="text" name="name" value="<%= student.name %>" required></label>
       <label>Admission number<input type="text" name="admissionNo" value="<%= student.admissionNo %>" required></label>
-      <label>Class<input type="text" name="class" value="<%= student.class %>"></label>
+      <label>Class
+        <select name="class">
+          <option value="">Not assigned</option>
+          <% if (student.class && !classOptions.some(item => item.value === student.class)) { %><option value="<%= student.class %>" selected><%= student.class %> (Current)</option><% } %>
+          <% classOptions.forEach(item => { %><option value="<%= item.value %>" <%= item.value === student.class ? 'selected' : '' %>><%= item.name %><%= item.stream ? ` - ${item.stream}` : '' %></option><% }) %>
+        </select>
+      </label>
       <label>Parent phone<input type="text" name="parentContact" value="<%= student.parentContact %>"></label>
       <div><button type="submit">Update Student</button> <a class="button" href="/students">Back to Students</a></div>
     </form>

@@ -9,7 +9,12 @@
     <form action="/students/add" method="POST">
       <label>Full name<input name="name" placeholder="Full name" required></label>
       <label>Admission number<input name="admissionNo" placeholder="Admission number" required></label>
-      <label>Class<input name="class" placeholder="Class e.g. 7A"></label>
+      <label>Class
+        <select name="class">
+          <option value="">Not assigned</option>
+          <% classOptions.forEach(item => { %><option value="<%= item.value %>"><%= item.name %><%= item.stream ? ` - ${item.stream}` : '' %></option><% }) %>
+        </select>
+      </label>
       <label>Parent phone<input name="parentContact" placeholder="Parent phone"></label>
       <button type="submit"><i class="fa-solid fa-check" aria-hidden="true"></i>Save Student</button>
     </form>

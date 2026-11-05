@@ -3,285 +3,191 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ibex Student System</title>
+  <title>Ibex School</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     :root {
-      color-scheme: dark;
-      --navy: #0F172A;
-      --indigo: #4F46E5;
-      --background: #0B1120;
-      --surface: #111827;
-      --surface-raised: #172033;
-      --text: #E2E8F0;
-      --text-muted: #94A3B8;
-      --line: #263245;
-      --shadow: 0 12px 30px rgba(0, 0, 0, .22);
+      color-scheme: light;
+      --green: #16A34A;
+      --green-dark: #14532D;
+      --orange: #F97316;
+      --page: #F8FAFC;
+      --surface: #fff;
+      --text: #17212b;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --shadow: 0 8px 24px rgba(15, 23, 42, .06);
     }
     * { box-sizing: border-box; }
-    html { min-width: 320px; background: var(--background); color-scheme: dark; }
-    body {
-      min-height: 100vh;
-      margin: 0;
-      background: var(--background);
-      color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
+    html { min-width: 320px; background: var(--page); }
+    body { min-height: 100vh; margin: 0; background: var(--page); color: var(--text); font-family: Inter, Arial, sans-serif; }
     a, button, input, select, textarea { font: inherit; }
-    a, button { transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
-    .topbar {
-      position: sticky;
-      z-index: 20;
-      top: 0;
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 24px;
-      min-height: 76px;
-      padding: 0 clamp(20px, 5vw, 76px);
-      border-bottom: 1px solid var(--line);
-      background: rgba(17, 24, 39, .96);
-      box-shadow: 0 5px 22px rgba(0, 0, 0, .22);
-      backdrop-filter: blur(14px);
-    }
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 11px;
-      width: max-content;
-      color: var(--text);
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -.045em;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-    .brand-mark {
-      display: grid;
-      width: 40px;
-      height: 40px;
-      place-items: center;
-      border-radius: 12px;
-      background: #24234B;
-      color: #A5B4FC;
-      font-size: 23px;
-      letter-spacing: 0;
-    }
-    .primary-nav {
+    a { color: var(--green-dark); }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    .app-shell { min-height: 100vh; }
+    .sidebar {
+      position: fixed;
+      z-index: 40;
+      inset: 0 auto 0 0;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-    }
-    .primary-nav a {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      min-height: 42px;
-      padding: 0 12px;
-      border-radius: 10px;
-      color: #CBD5E1;
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-    .primary-nav a i { color: #A5B4FC; font-size: 13px; }
-    .primary-nav a:hover,
-    .primary-nav a:focus-visible {
-      background: #24234B;
-      color: #C7D2FE;
-      outline: none;
-    }
-    .account-area {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 13px;
-      min-width: 0;
-    }
-    .user-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--text);
-      font-size: 12px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .avatar {
-      display: grid;
-      flex: 0 0 38px;
-      width: 38px;
-      height: 38px;
-      place-items: center;
-      border: 1px solid #3B3B70;
-      border-radius: 50%;
-      background: #24234B;
-      color: #C7D2FE;
-      font-size: 14px;
-      font-weight: 800;
-    }
-    .logout-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      min-height: 38px;
-      padding: 0 13px;
-      border: 1px solid #7F1D1D;
-      border-radius: 10px;
-      background: transparent;
-      color: #FCA5A5;
-      font-size: 12px;
-      font-weight: 700;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-    .logout-button:hover { border-color: #EF4444; background: #351D29; }
-    .auth-links { display: flex; justify-content: flex-end; gap: 8px; }
-    .auth-links a {
-      padding: 10px 13px;
-      border-radius: 9px;
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 700;
-      text-decoration: none;
-    }
-    .auth-links a:last-child { background: var(--indigo); color: #fff; }
-    .auth-links a:hover { background: #24234B; color: #C7D2FE; }
-    .auth-links a:last-child:hover { background: #4338CA; color: #fff; }
-    .page-content { min-height: calc(100vh - 150px); }
-    main {
-      width: min(1200px, calc(100% - 48px));
-      margin: 34px auto 48px;
-    }
-    .panel, .card, .box, .welcome {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: var(--surface);
-      box-shadow: var(--shadow);
-    }
-    .panel, .box { padding: clamp(20px, 3vw, 30px); }
-    .panel + .panel, .card + .panel { margin-top: 20px; }
-    h1, h2, h3 { color: var(--text); letter-spacing: -.035em; }
-    h1 { margin: 0 0 22px; font-size: clamp(1.55rem, 3vw, 2rem); }
-    h2 { margin: 0 0 18px; font-size: 1.2rem; }
-    p { color: #CBD5E1; line-height: 1.65; }
-    .table-wrap {
-      overflow-x: auto;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: #111827;
-    }
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th, td { padding: 14px 16px; border-bottom: 1px solid #263245; }
-    th {
-      background: #172033;
-      color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .07em;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-    td { color: #CBD5E1; font-size: 13px; }
-    tbody tr:last-child td, table tr:last-child td { border-bottom: 0; }
-    tbody tr:hover { background: #192337; }
-    label { display: grid; gap: 7px; color: #CBD5E1; font-size: 13px; font-weight: 600; }
-    input, select, textarea {
-      width: 100%;
-      min-height: 44px;
-      padding: 10px 12px;
-      border: 1px solid #334155;
-      border-radius: 9px;
-      background: #0F172A;
-      color: var(--text);
-      outline: none;
-    }
-    input:focus, select:focus, textarea:focus {
-      border-color: #818CF8;
-      box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
-    }
-    button, .button, a.button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      min-height: 42px;
-      padding: 0 16px;
-      border: 1px solid transparent;
-      border-radius: 9px;
-      background: var(--indigo);
+      width: 252px;
+      flex-direction: column;
+      padding: 22px 14px;
+      background: var(--green-dark);
       color: #fff;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 700;
-      text-decoration: none;
     }
-    button:hover, .button:hover, a.button:hover {
-      background: #4338CA;
-      box-shadow: 0 5px 14px rgba(79, 70, 229, .2);
-      transform: translateY(-1px);
-    }
+    .sidebar-brand { display: flex; align-items: center; gap: 12px; padding: 3px 12px 28px; color: #fff; font-size: 17px; font-weight: 700; text-decoration: none; }
+    .sidebar-brand-mark { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid rgba(255,255,255,.2); border-radius: 12px; background: rgba(255,255,255,.1); font-size: 18px; }
+    .sidebar-label { padding: 5px 12px 10px; color: #bbd5c3; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    .sidebar-nav { display: grid; gap: 5px; }
+    .sidebar-nav a { display: flex; min-height: 44px; align-items: center; gap: 12px; padding: 0 12px; border-radius: 10px; color: #e2eee5; font-size: 13px; font-weight: 500; text-decoration: none; }
+    .sidebar-nav a i { width: 18px; color: #c4dfca; text-align: center; }
+    .sidebar-nav a:hover, .sidebar-nav a:focus-visible { background: rgba(255,255,255,.1); color: #fff; outline: none; }
+    .sidebar-nav a.active { background: rgba(255,255,255,.16); color: #fff; font-weight: 600; }
+    .sidebar-bottom { margin-top: auto; padding: 14px 12px 0; border-top: 1px solid rgba(255,255,255,.16); color: #d3e4d7; font-size: 12px; }
+    .app-main { min-height: 100vh; margin-left: 252px; }
+    .topbar { position: sticky; z-index: 30; top: 0; display: flex; min-height: 76px; align-items: center; gap: 18px; padding: 12px clamp(18px, 3vw, 38px); border-bottom: 1px solid var(--line); background: rgba(255,255,255,.96); backdrop-filter: blur(12px); }
+    .menu-toggle { display: none; width: 40px; height: 40px; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--text); }
+    .school-heading { min-width: 130px; }
+    .school-heading strong { display: block; font-size: 14px; }
+    .school-heading span { color: var(--muted); font-size: 11px; }
+    .term-select { width: auto; min-width: 116px; min-height: 40px; margin: 0; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: #334155; font-size: 12px; }
+    .topbar-search { display: flex; width: min(340px, 35vw); min-height: 40px; align-items: center; gap: 9px; margin-left: auto; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: #f8fafc; color: #94a3b8; }
+    .topbar-search input { width: 100%; min-height: 36px; margin: 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 12px; }
+    .topbar-search input:focus { box-shadow: none; }
+    .topbar-icon { position: relative; display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: #475569; text-decoration: none; }
+    .topbar-user { display: flex; align-items: center; gap: 9px; color: var(--text); font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+    .topbar-avatar { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: #dcfce7; color: var(--green-dark); font-size: 13px; font-weight: 700; }
+    .auth-links { display: flex; gap: 8px; margin-left: auto; }
+    .auth-links a { padding: 10px 14px; border-radius: 9px; color: var(--green-dark); font-size: 13px; font-weight: 600; text-decoration: none; }
+    .auth-links a:last-child { background: var(--green); color: #fff; }
+    .page-content { min-height: calc(100vh - 76px); padding: 26px clamp(16px, 3vw, 38px) 36px; }
+    main { width: 100%; max-width: 1440px; margin: 0 auto; }
+    .panel, .card, .box, .welcome { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+    .panel, .box { padding: clamp(18px, 2.5vw, 28px); }
+    .panel + .panel, .card + .panel { margin-top: 20px; }
+    h1, h2, h3 { color: #17212b; }
+    h1 { margin: 0 0 20px; font-size: clamp(1.35rem, 2.5vw, 1.8rem); letter-spacing: -.03em; }
+    h2 { margin: 0 0 16px; font-size: 1.1rem; }
+    p { color: #475569; line-height: 1.6; }
+    label { display: grid; gap: 7px; color: #334155; font-size: 12px; font-weight: 600; }
+    input, select, textarea { width: 100%; min-height: 40px; padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: var(--text); outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,.12); }
+    button, .button, a.button { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border: 1px solid transparent; border-radius: 9px; background: var(--green); color: #fff; cursor: pointer; font-size: 12px; font-weight: 600; text-decoration: none; }
+    button:hover, .button:hover, a.button:hover { background: #15803d; }
+    button.delete, .button.delete, a.button.delete { background: #dc2626; color: #fff; }
+    button.delete:hover, .button.delete:hover, a.button.delete:hover { background: #b91c1c; }
+    button.secondary, .button.secondary, a.button.secondary, button.cancel { background: #64748b; color: #fff; }
+    button.secondary:hover, .button.secondary:hover, a.button.secondary:hover, button.cancel:hover { background: #475569; }
     form { color: var(--text); }
     form button { width: auto; }
-    .delete { background: #991B1B; }
-    .delete:hover { background: #7F1D1D; }
-    .footer {
-      padding: 22px 20px;
-      border-top: 1px solid var(--line);
-      background: #111827;
-      color: var(--text-muted);
-      text-align: center;
-      font-size: 12px;
-    }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    th { background: #f1f5f9; color: #64748b; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+    td { color: #334155; font-size: 12px; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr:hover { background: #f0fdf4; }
+    tbody tr:last-child td, table tr:last-child td { border-bottom: 0; }
+    .table-toolbar, .table-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; }
+    .table-toolbar input { width: min(260px, 100%); min-height: 36px; font-size: 12px; }
+    .table-toolbar select { width: auto; min-width: 135px; min-height: 36px; }
+    .table-toolbar-actions { display: flex; gap: 8px; }
+    .table-toolbar button { min-height: 34px; padding: 0 10px; font-size: 11px; }
+    .table-pagination { justify-content: flex-end; color: var(--muted); font-size: 11px; }
+    .table-pagination button { min-height: 30px; padding: 0 10px; background: #e2e8f0; color: #334155; }
+    .table-pagination button:disabled { cursor: not-allowed; opacity: .5; }
+    .footer { padding: 18px 0; color: var(--muted); text-align: center; font-size: 11px; }
     .footer p { margin: 0; color: inherit; }
-    @media (max-width: 1080px) {
-      .topbar { grid-template-columns: auto 1fr; gap: 8px 20px; padding-top: 12px; padding-bottom: 12px; }
-      .brand { grid-column: 1; }
-      .account-area, .auth-links { grid-column: 2; grid-row: 1; }
-      .primary-nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; flex-wrap: wrap; }
+    .sidebar-backdrop { display: none; }
+    @media (max-width: 1100px) {
+      .sidebar { width: 220px; }
+      .app-main { margin-left: 220px; }
+      .topbar { gap: 10px; }
+      .school-heading { min-width: 110px; }
+      .topbar-search { width: min(270px, 28vw); }
+      .topbar-user span:last-child { display: none; }
     }
-    @media (max-width: 600px) {
-      .topbar { grid-template-columns: 1fr; gap: 8px; }
-      .brand, .primary-nav, .account-area, .auth-links { grid-column: 1; grid-row: auto; }
-      .account-area, .auth-links { justify-content: flex-start; }
-      .primary-nav { gap: 2px; }
-      .primary-nav a { min-height: 38px; padding: 0 9px; font-size: 12px; }
-      main { width: min(100% - 28px, 1200px); margin-top: 22px; }
+    @media (max-width: 760px) {
+      .sidebar { width: 252px; transform: translateX(-100%); transition: transform .2s ease; }
+      .app-main { margin-left: 0; }
+      .sidebar-open .sidebar { transform: translateX(0); }
+      .sidebar-backdrop { position: fixed; z-index: 35; inset: 0; background: rgba(15,23,42,.4); }
+      .sidebar-open .sidebar-backdrop { display: block; }
+      .menu-toggle { display: inline-flex; flex: 0 0 40px; }
+      .topbar { min-height: 66px; padding: 10px 14px; }
+      .school-heading { min-width: 0; }
+      .school-heading span { display: none; }
+      .term-select { min-width: 96px; }
+      .topbar-search { width: auto; flex: 1; }
+      .topbar-search input::placeholder { color: transparent; }
+      .topbar-user span:last-child { display: none; }
+      .page-content { padding: 18px 14px 26px; }
+    }
+    @media (max-width: 460px) {
+      .topbar { flex-wrap: wrap; gap: 8px; }
+      .school-heading { flex: 1; }
+      .term-select { order: 4; width: 100%; }
+      .topbar-search { order: 5; width: 100%; }
+      .topbar-search input::placeholder { color: #94a3b8; }
+      .topbar-icon { order: 3; }
+      .topbar-user { order: 2; }
+      .menu-toggle { order: 1; }
+      .page-content { min-height: calc(100vh - 120px); }
+      .table-toolbar { align-items: stretch; flex-wrap: wrap; }
+      .table-toolbar input { width: 100%; }
+      .table-toolbar-actions { display: flex; }
       .table-wrap table { min-width: 560px; }
     }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    @media print {
+      .sidebar, .topbar, .footer, .table-toolbar, .table-pagination, button, .button, a.button { display: none !important; }
+      .app-main { margin: 0; }
+      .page-content { padding: 0; }
+      .panel, .card, .box { border: 0; box-shadow: none; }
     }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/dashboard"><span class="brand-mark" aria-hidden="true">⛰️</span><span>Ibex System</span></a>
-    <% if(typeof user !== 'undefined' && user) { %>
-      <nav class="primary-nav" aria-label="Main navigation">
-        <a href="/dashboard"><i class="fa-solid fa-house" aria-hidden="true"></i>Dashboard</a>
-        <% if (user.role === 'admin' || user.role === 'teacher') { %><a href="/students"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i>Students</a><% } %>
-        <a href="/teachers"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i>Teachers</a>
-        <a href="/grades"><i class="fa-solid fa-chart-column" aria-hidden="true"></i>Grades</a>
-        <a href="/fees"><i class="fa-solid fa-wallet" aria-hidden="true"></i>Fees</a>
-        <a href="/reports"><i class="fa-solid fa-file-lines" aria-hidden="true"></i>Reports</a>
-      </nav>
-      <div class="account-area">
-        <span class="user-badge"><span class="avatar" aria-hidden="true"><%= String(user.name || 'D').charAt(0).toUpperCase() %></span><span><%= user.name %> - <%= user.role %></span></span>
-        <a class="logout-button" href="/logout"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>Logout</a>
-      </div>
-    <% } else { %>
-      <div class="auth-links">
-        <a href="/login">Login</a>
-        <a href="/register">Register</a>
-      </div>
-    <% } %>
-  </header>
-  <div class="page-content">
+  <div class="app-shell">
+    <aside class="sidebar" id="appSidebar" aria-label="Main navigation">
+      <a class="sidebar-brand" href="/dashboard"><span class="sidebar-brand-mark" aria-hidden="true"><i class="fa-solid fa-school"></i></span><span>Ibex School</span></a>
+      <% if (typeof user !== 'undefined' && user) { %>
+        <div class="sidebar-label">School management</div>
+        <nav class="sidebar-nav">
+          <a href="/dashboard"><i class="fa-solid fa-house"></i>Dashboard</a>
+          <% if (['admin', 'teacher'].includes(user.role)) { %><a href="/students"><i class="fa-solid fa-user-graduate"></i>Students</a><% } %>
+          <a href="/fees"><i class="fa-solid fa-wallet"></i>Fees</a>
+          <a href="/grades"><i class="fa-solid fa-book-open"></i>Grades / Exams</a>
+          <a href="/attendance"><i class="fa-solid fa-clipboard-check"></i>Attendance</a>
+          <% if (user.role === 'admin') { %><a href="/classes"><i class="fa-solid fa-chalkboard"></i>Classes</a><% } %>
+          <a href="/reports"><i class="fa-solid fa-chart-pie"></i>Reports</a>
+          <% if (user.role === 'admin') { %><a href="/users"><i class="fa-solid fa-users"></i>Users</a><% } %>
+          <% if (['admin', 'teacher'].includes(user.role)) { %><a href="/teachers"><i class="fa-solid fa-person-chalkboard"></i>Staff</a><% } %>
+        </nav>
+        <div class="sidebar-bottom">School administration</div>
+      <% } %>
+    </aside>
+    <button class="sidebar-backdrop" type="button" aria-label="Close navigation" data-sidebar-close></button>
+    <div class="app-main">
+      <header class="topbar">
+        <% if (typeof user !== 'undefined' && user) { %>
+          <button class="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="appSidebar" data-sidebar-toggle><i class="fa-solid fa-bars"></i></button>
+          <div class="school-heading"><strong>Ibex School</strong><span>School management</span></div>
+          <select class="term-select" id="termSelector" aria-label="Academic term" title="Filter term on dashboard, fees and grades">
+            <% const headerTerms = typeof termOptions !== 'undefined' && termOptions.length ? termOptions : ['Term 1', 'Term 2', 'Term 3']; %>
+            <option value="" <%= typeof selectedTerm === 'undefined' || !selectedTerm ? 'selected' : '' %>>All terms</option>
+            <% headerTerms.forEach(termOption => { %><option value="<%= termOption %>" <%= typeof selectedTerm !== 'undefined' && selectedTerm === termOption ? 'selected' : '' %>><%= termOption %></option><% }) %>
+          </select>
+          <label class="topbar-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="globalTableSearch" type="search" placeholder="Search students or records" aria-label="Search visible records"></label>
+          <a class="topbar-icon" href="/fees" aria-label="View fee balances" title="Fee balances"><i class="fa-regular fa-bell"></i></a>
+          <a class="topbar-user" href="/logout" title="Log out"><span class="topbar-avatar"><%= String(user.name || 'U').charAt(0).toUpperCase() %></span><span><%= user.name %></span></a>
+        <% } else { %>
+          <div class="school-heading"><strong>Ibex School</strong><span>School management</span></div>
+          <div class="auth-links"><a href="/login">Log in</a><a href="/register">Register</a></div>
+        <% } %>
+      </header>
+      <div class="page-content">

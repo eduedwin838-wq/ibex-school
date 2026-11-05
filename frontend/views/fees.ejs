@@ -1,41 +1,56 @@
-<%- include('_header', { user }) %>
+<%- include('_header', { user, termOptions, selectedTerm }) %>
 <style>
   .forms { display: grid; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); gap: 24px; }
   .payment-form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
   .payment-form label { flex: 1 1 180px; }
   .payment-form button { flex: 0 0 auto; }
-  .badge { display: inline-flex; padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
-  .cleared { background: #12332C; color: #6EE7B7; }
-  .pending { background: #3B202B; color: #FDA4AF; }
-  .secondary { background: #334155; }
+  .badge { display: inline-flex; padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .cleared { background: #dcfce7; color: #166534; }
+  .pending { background: #fee2e2; color: #b91c1c; }
+  .balance-due { color: #dc2626; font-weight: 700; }
+  .secondary { background: #64748b; }
   .secondary:hover { background: #475569; }
-  .payment-link { margin-top: 4px; }
+  .fee-statement { width: min(520px, calc(100% - 24px)); border: 0; border-radius: 16px; padding: 0; box-shadow: 0 20px 60px rgba(15,23,42,.25); }
+  .fee-statement::backdrop { background: rgba(15,23,42,.48); }
+  .statement-content { padding: 26px; }
+  .statement-content h2 { margin-top: 0; }
+  .statement-content dl { display: grid; grid-template-columns: 1fr auto; gap: 10px 18px; }
+  .statement-content dt { color: #64748b; }
+  .statement-content dd { margin: 0; font-weight: 600; text-align: right; }
+  .statement-note { padding: 10px; border-radius: 8px; background: #f1f5f9; color: #475569; font-size: 11px; }
+  .dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .dialog-message { margin: 12px 0 0; font-size: 12px; }
   @media (max-width: 760px) { .forms { grid-template-columns: 1fr; } }
+  @media print {
+    body.printing-receipt * { visibility: hidden !important; }
+    body.printing-receipt #receiptDialog, body.printing-receipt #receiptDialog * { visibility: visible !important; }
+    body.printing-receipt #receiptDialog { position: fixed; inset: 0; width: 100%; max-width: none; margin: 0; box-shadow: none; }
+    body.printing-receipt .dialog-actions { display: none; }
+  }
 </style>
 <main>
   <h1>Fees &amp; Payments</h1>
   <% if (user.role === 'parent' || user.role === 'student') { %>
     <section class="panel payment-link">
       <h2>Payment options</h2>
-      <p>Pay securely via M-Pesa Till <strong>123456</strong>, then ask the school administrator to record your payment.</p>
-      <a class="button" href="tel:*150*00%23"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>Pay via Mpesa Till 123456</a>
+      <p>Request an M-Pesa payment for an outstanding balance. Payment processing is not yet connected.</p>
     </section>
   <% } %>
   <% if (canManage) { %>
     <section class="panel forms">
-      <div>
+      <div id="record-payment">
         <h2>Record payment</h2>
         <form class="payment-form" method="POST" action="/fees/add">
           <label>Student<select name="student_id" required><option value="">Select student</option><% students.forEach(student => { %><option value="<%= student.id %>"><%= student.name %> (<%= student.admissionNo %>)</option><% }) %></select></label>
           <label>Term<input name="term" placeholder="Term1-2026" required></label>
           <label>Amount paid<input name="paid_amount" type="number" min="0.01" step="0.01" required></label>
           <label>Method<select name="payment_method" required><option value="cash">Cash</option><option value="mpesa">M-Pesa</option><option value="bank">Bank</option></select></label>
-          <label>M-Pesa code<input name="mpesa_code" maxlength="20" placeholder="Optional"></label>
+          <label>M-Pesa code<input name="mpesa_code" maxlength="20" placeholder="Required for M-Pesa"></label>
           <button type="submit">Add payment</button>
         </form>
       </div>
       <div>
-        <h2>Create term</h2>
+        <h2>Create term balances</h2>
         <form class="payment-form" method="POST" action="/fees/create-term">
           <label>Term<input name="term" placeholder="Term1-2026" required></label>
           <label>Total amount<input name="total_amount" type="number" min="0" step="0.01" value="15000"></label>
@@ -45,17 +60,135 @@
     </section>
   <% } %>
   <section class="panel">
-    <h2><%= canManage ? 'All fee records' : 'My fee history' %></h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Student</th><th>Term</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
-        <tbody>
-          <% if (fees.length) { fees.forEach(fee => { const balance = Number(fee.balance || 0); %>
-            <tr><td><%= fee.student_name %></td><td><%= fee.term %></td><td><%= Number(fee.total_amount).toFixed(2) %></td><td><%= Number(fee.paid_amount).toFixed(2) %></td><td><strong><%= balance.toFixed(2) %></strong></td><td><span class="badge <%= balance === 0 ? 'cleared' : 'pending' %>"><%= balance === 0 ? 'CLEARED' : 'PENDING' %></span></td></tr>
-          <% }) } else { %><tr><td colspan="6">No fee records found.</td></tr><% } %>
-        </tbody>
-      </table>
-    </div>
+    <h2><%= canManage ? 'Fee records' : 'My fee history' %></h2>
+    <% if (fees.length) { %>
+      <div class="table-wrap">
+        <table data-filter-class data-search-placeholder="Search by admission number or student">
+          <thead><tr><th>Student</th><th>Admission No.</th><th>Class</th><th>Term</th><th>Total</th><th>Paid to date</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <% fees.forEach(fee => { const balance = Number(fee.balance || 0); %>
+              <tr data-class="<%= fee.student_class || '' %>">
+                <td><%= fee.student_name %></td><td><%= fee.admissionNo %></td><td><%= fee.student_class || '—' %></td><td><%= fee.term %></td>
+                <td>KES <%= Number(fee.total_amount).toLocaleString() %></td><td>KES <%= Number(fee.paid_amount).toLocaleString() %></td>
+                <td class="<%= balance > 0 ? 'balance-due' : '' %>">KES <%= balance.toLocaleString() %></td>
+                <td><span class="badge <%= balance === 0 ? 'cleared' : 'pending' %>"><%= balance === 0 ? 'CLEARED' : 'PENDING' %></span></td>
+                <td>
+                  <button class="secondary receipt-button" type="button"
+                    data-student="<%= fee.student_name %>" data-admission="<%= fee.admissionNo %>" data-class="<%= fee.student_class || '' %>"
+                    data-term="<%= fee.term %>" data-total="<%= fee.total_amount %>" data-paid="<%= fee.paid_amount %>" data-balance="<%= fee.balance %>">Receipt</button>
+                  <% if (balance > 0 && ['admin', 'parent', 'student'].includes(user.role)) { %>
+                    <button class="stk-button" type="button" data-fee-id="<%= fee.id %>" data-balance="<%= balance %>">Pay Now</button>
+                  <% } %>
+                  <% if (user.role === 'admin') { %><button class="secondary sms-button" type="button" data-student-id="<%= fee.student_id %>">Send SMS</button><% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %><p>No fee records found for this term.</p><% } %>
   </section>
 </main>
+
+<dialog class="fee-statement" id="receiptDialog">
+  <div class="statement-content">
+    <h2>Fee Account Summary</h2>
+    <p>Ibex School · <span id="receiptTerm"></span></p>
+    <dl>
+      <dt>Student</dt><dd id="receiptStudent"></dd>
+      <dt>Admission number</dt><dd id="receiptAdmission"></dd>
+      <dt>Class</dt><dd id="receiptClass"></dd>
+      <dt>Total fees</dt><dd id="receiptTotal"></dd>
+      <dt>Paid to date</dt><dd id="receiptPaid"></dd>
+      <dt>Outstanding balance</dt><dd id="receiptBalance"></dd>
+    </dl>
+    <p class="statement-note">This is a current account summary, not an individual transaction receipt. The system does not yet store payment-by-payment records.</p>
+    <div class="dialog-actions"><button class="secondary" type="button" data-close-dialog>Close</button><button type="button" id="printReceipt">Print summary</button></div>
+  </div>
+</dialog>
+
+<dialog class="fee-statement" id="paymentDialog">
+  <form class="statement-content" id="stkForm">
+    <h2>Request M-Pesa payment</h2>
+    <p>The Daraja STK Push integration is a placeholder and will not initiate a payment yet.</p>
+    <input type="hidden" name="feeId">
+    <label>Amount (KES)<input name="amount" type="number" min="1" step="1" required></label>
+    <label style="margin-top:12px">M-Pesa phone number<input name="phone" type="tel" placeholder="07XXXXXXXX" required></label>
+    <p class="dialog-message" id="stkMessage" role="status"></p>
+    <div class="dialog-actions"><button class="secondary" type="button" data-close-dialog>Cancel</button><button type="submit">Request STK Push</button></div>
+  </form>
+</dialog>
+<script>
+  const receiptDialog = document.getElementById("receiptDialog");
+  document.querySelectorAll(".receipt-button").forEach(button => {
+    button.addEventListener("click", () => {
+      document.getElementById("receiptStudent").textContent = button.dataset.student;
+      document.getElementById("receiptAdmission").textContent = button.dataset.admission;
+      document.getElementById("receiptClass").textContent = button.dataset.class || "—";
+      document.getElementById("receiptTerm").textContent = button.dataset.term;
+      document.getElementById("receiptTotal").textContent = `KES ${Number(button.dataset.total).toLocaleString()}`;
+      document.getElementById("receiptPaid").textContent = `KES ${Number(button.dataset.paid).toLocaleString()}`;
+      document.getElementById("receiptBalance").textContent = `KES ${Number(button.dataset.balance).toLocaleString()}`;
+      receiptDialog.showModal();
+    });
+  });
+  document.querySelectorAll("[data-close-dialog]").forEach(button => {
+    button.addEventListener("click", () => button.closest("dialog").close());
+  });
+  document.getElementById("printReceipt").addEventListener("click", () => {
+    document.body.classList.add("printing-receipt");
+    window.print();
+  });
+  window.addEventListener("afterprint", () => document.body.classList.remove("printing-receipt"));
+
+  const paymentDialog = document.getElementById("paymentDialog");
+  document.querySelectorAll(".stk-button").forEach(button => {
+    button.addEventListener("click", () => {
+      const form = document.getElementById("stkForm");
+      form.elements.feeId.value = button.dataset.feeId;
+      form.elements.amount.max = button.dataset.balance;
+      form.elements.amount.value = button.dataset.balance;
+      document.getElementById("stkMessage").textContent = "";
+      paymentDialog.showModal();
+    });
+  });
+  document.getElementById("stkForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const message = document.getElementById("stkMessage");
+    try {
+      const response = await fetch("/api/mpesa/stkpush", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feeId: form.elements.feeId.value,
+          amount: form.elements.amount.value,
+          phone: form.elements.phone.value
+        })
+      });
+      const result = await response.json();
+      message.textContent = result.message || "M-Pesa is not configured.";
+    } catch (error) {
+      message.textContent = "Could not contact the payment service. Please try again.";
+    }
+  });
+  document.querySelectorAll(".sms-button").forEach(button => {
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        const response = await fetch("/api/sms/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ studentId: button.dataset.studentId })
+        });
+        const result = await response.json();
+        alert(result.message || "SMS service is not configured.");
+      } catch (error) {
+        alert("Could not contact the SMS service. Please try again.");
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+</script>
 <%- include('_footer') %>

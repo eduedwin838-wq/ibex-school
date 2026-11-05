@@ -1,6 +1,142 @@
+      </div>
+      <footer class="footer">
+        <p>&copy; 2026 Ibex School. All rights reserved.</p>
+      </footer>
+    </div>
   </div>
-  <footer class="footer">
-    <p>&copy; 2026 Ibex Student System. All rights reserved.</p>
-  </footer>
+  <script>
+    (() => {
+      const sidebarToggle = document.querySelector("[data-sidebar-toggle]");
+      const closeSidebar = () => {
+        document.body.classList.remove("sidebar-open");
+        sidebarToggle?.setAttribute("aria-expanded", "false");
+      };
+      sidebarToggle?.addEventListener("click", () => {
+        const isOpen = document.body.classList.toggle("sidebar-open");
+        sidebarToggle.setAttribute("aria-expanded", String(isOpen));
+      });
+      document.querySelector("[data-sidebar-close]")?.addEventListener("click", closeSidebar);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeSidebar();
+      });
+
+      const termSelector = document.getElementById("termSelector");
+      if (termSelector) {
+        termSelector.addEventListener("change", () => {
+          if (/^\/(dashboard|fees|grades)$/.test(window.location.pathname)) {
+            const url = new URL(window.location.href);
+            url.searchParams.set("term", termSelector.value);
+            window.location.assign(url.toString());
+          }
+        });
+      }
+
+      const globalSearch = document.getElementById("globalTableSearch");
+      const tables = [...document.querySelectorAll(".table-wrap table")].filter((table) => table.tBodies.length);
+      const tableStates = tables.map((table, index) => {
+        const wrapper = table.closest(".table-wrap");
+        const toolbar = document.createElement("div");
+        toolbar.className = "table-toolbar";
+        const search = document.createElement("input");
+        search.type = "search";
+        search.placeholder = table.dataset.searchPlaceholder || "Search this table";
+        search.setAttribute("aria-label", "Search table rows");
+        const classFilter = table.hasAttribute("data-filter-class")
+          ? document.createElement("select")
+          : null;
+        if (classFilter) {
+          classFilter.setAttribute("aria-label", "Filter table by class");
+          classFilter.innerHTML = '<option value="">All classes</option>';
+          [...new Set([...table.tBodies[0].rows].map((row) => row.dataset.class).filter(Boolean))]
+            .sort()
+            .forEach((className) => {
+              const option = document.createElement("option");
+              option.value = className;
+              option.textContent = className;
+              classFilter.append(option);
+            });
+        }
+        const actions = document.createElement("div");
+        actions.className = "table-toolbar-actions";
+        const excelButton = document.createElement("button");
+        excelButton.type = "button";
+        excelButton.className = "secondary";
+        excelButton.textContent = "Export Excel";
+        const pdfButton = document.createElement("button");
+        pdfButton.type = "button";
+        pdfButton.className = "secondary";
+        pdfButton.textContent = "Export PDF";
+        actions.append(excelButton, pdfButton);
+        toolbar.append(search);
+        if (classFilter) toolbar.append(classFilter);
+        toolbar.append(actions);
+        wrapper.insertBefore(toolbar, table);
+
+        const pagination = document.createElement("div");
+        pagination.className = "table-pagination";
+        const summary = document.createElement("span");
+        const previous = document.createElement("button");
+        previous.type = "button";
+        previous.textContent = "Previous";
+        const next = document.createElement("button");
+        next.type = "button";
+        next.textContent = "Next";
+        pagination.append(summary, previous, next);
+        wrapper.after(pagination);
+
+        const rows = [...table.tBodies].flatMap((tbody) => [...tbody.rows]);
+        const state = { table, rows, search, summary, previous, next, page: 0 };
+        const update = () => {
+          const localTerm = search.value.trim().toLowerCase();
+          const globalTerm = globalSearch?.value.trim().toLowerCase() || "";
+          const filtered = rows.filter((row) => {
+            const text = row.textContent.toLowerCase();
+            return text.includes(localTerm)
+              && text.includes(globalTerm)
+              && (!classFilter || !classFilter.value || row.dataset.class === classFilter.value);
+          });
+          const pageCount = Math.max(1, Math.ceil(filtered.length / 10));
+          state.page = Math.min(state.page, pageCount - 1);
+          rows.forEach((row) => { row.hidden = true; });
+          filtered.slice(state.page * 10, (state.page + 1) * 10).forEach((row) => { row.hidden = false; });
+          const start = filtered.length ? state.page * 10 + 1 : 0;
+          summary.textContent = `${start}-${Math.min((state.page + 1) * 10, filtered.length)} of ${filtered.length}`;
+          previous.disabled = state.page === 0;
+          next.disabled = state.page >= pageCount - 1;
+          pagination.hidden = filtered.length <= 10;
+        };
+        search.addEventListener("input", () => { state.page = 0; update(); });
+        classFilter?.addEventListener("change", () => { state.page = 0; update(); });
+        previous.addEventListener("click", () => { state.page -= 1; update(); });
+        next.addEventListener("click", () => { state.page += 1; update(); });
+        excelButton.addEventListener("click", () => {
+          const rowsToExport = rows.filter((row) =>
+            row.textContent.toLowerCase().includes(search.value.trim().toLowerCase())
+            && row.textContent.toLowerCase().includes(globalSearch?.value.trim().toLowerCase() || "")
+            && (!classFilter || !classFilter.value || row.dataset.class === classFilter.value),
+          );
+          const values = [table.tHead?.rows[0], ...rowsToExport].filter(Boolean).map((row) =>
+            [...row.cells].map((cell) => `"${cell.innerText.trim().replace(/"/g, '""')}"`).join(","),
+          );
+          const blob = new Blob(["\uFEFF" + values.join("\r\n")], { type: "text/csv;charset=utf-8" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `ibex-table-${index + 1}.csv`;
+          link.click();
+          URL.revokeObjectURL(link.href);
+        });
+        pdfButton.addEventListener("click", () => window.print());
+        update();
+        return state;
+      });
+      globalSearch?.addEventListener("input", () => {
+        tableStates.forEach((state) => { state.page = 0; });
+        tableStates.forEach((state) => {
+          const event = new Event("input");
+          state.search.dispatchEvent(event);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
